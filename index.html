@@ -169,6 +169,12 @@ tr.h-off td{color:#9aa6ae;}
 /* ── phones (Caryn field test 08-10): bigger tap targets, no iOS zoom-on-
    focus, sheet-style modals/drawer, finger-friendly scrollable week grid ── */
 @media(max-width:640px){
+  /* the page must NEVER scroll sideways — wide things scroll inside their
+     own wrappers. Column-flex children need min-width:0 or their intrinsic
+     content width (long selects, unbroken strings) drags the page wide. */
+  html,body{overflow-x:hidden;}
+  .main,.main .page,.page>*,.panel,.subbar>*{min-width:0;max-width:100%;}
+  select,select.pill{max-width:100%;}
   .hdr{padding:8px 10px;gap:8px;}
   .hdr h1{font-size:16px;}
   .hdr .tag{display:none;}
@@ -195,6 +201,11 @@ tr.h-off td{color:#9aa6ae;}
   .wk td.hlbl{position:sticky;left:0;background:var(--bg);z-index:2;}
   .wk th:first-child{position:sticky;left:0;background:var(--bg);z-index:2;}
   .days{grid-template-columns:repeat(2,minmax(0,1fr));}
+  /* phone readability: helper text and list sublines up a step */
+  .note{font-size:12.5px;}
+  .li{font-size:13.5px;}
+  .li small{font-size:12px;}
+  .day .best{font-size:11px;}
 }
 </style>
 </head>
@@ -339,7 +350,7 @@ tr.h-off td{color:#9aa6ae;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.5 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.6 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
