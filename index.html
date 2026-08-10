@@ -237,8 +237,10 @@ tr.h-off td{color:#9aa6ae;}
 </div>
 <div class="subbar">
   <span class="locchips" id="loc-chips"></span>
-  <select class="pill" id="prof-sel" onchange="setActiveProfile(this.value)"></select>
-  <button class="pill" onclick="mOpen('m-prof');profRenderList()" title="Manage condition profiles — thresholds, spray hours, wind directions">✎</button>
+  <span style="display:inline-flex;gap:0;align-items:stretch;flex-wrap:nowrap;">
+    <select class="pill" id="prof-sel" onchange="setActiveProfile(this.value)" style="border-radius:9px 0 0 9px;border-right-width:0;max-width:58vw;"></select>
+    <button class="pill" onclick="mOpen('m-prof');profRenderList()" title="Manage condition profiles — thresholds, spray hours, wind directions" style="border-radius:0 9px 9px 0;">✎</button>
+  </span>
   <button class="pill" style="background:var(--acc);border-color:var(--acc);color:#fff;" onclick="planFormOpen()">📌 Plan Spray</button>
   <span class="note" id="wx-note"></span>
 </div>
@@ -363,7 +365,7 @@ tr.h-off td{color:#9aa6ae;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.6 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.7 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
