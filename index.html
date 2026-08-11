@@ -388,6 +388,7 @@ table.bigt col.cdl{width:64px;}
       satellite imagery tiles, only while the 🧭 wind map is open; and your own Google form, only if you connect it.</p>
       <p style="margin-top:8px;"><b>A forecast is a forecast:</b> SprayCast is planning help, not a decision-maker. The product label always wins,
       and check live conditions before you pull out of the yard.</p>
+      <p style="margin-top:8px;">📖 New here, or handing this to the crew? The <a href="guide.html">how-to guide</a> walks through everything — including the Google-Sheet setup with the gotchas spelled out.</p>
       <p style="margin-top:8px;color:var(--txt2);">SprayCast is a small taste of the farm-management system built at Overdevest Nurseries —
       spray records, scouting, inventory, compliance and more. Curious? Ask Caryn.</p>
       </div>
@@ -395,7 +396,7 @@ table.bigt col.cdl{width:64px;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.15 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.16 · <a href="guide.html">📖 how-to guide</a>  · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
@@ -2327,8 +2328,10 @@ function backExport(){
   var pack={app:'SprayCast',v:3,exported:new Date().toISOString(),locations:locs,profiles:profs,watches:watches,plans:plans};
   var gs=sheetCfg();if(gs)pack.sheetform=gs; /* a coworker who imports writes to the same sheet */
   var b=new Blob([JSON.stringify(pack,null,1)],{type:'application/json'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(b);
-  a.download='SprayCast_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  var fn='SprayCast_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  /* phone: share sheet (Save to Files / Mail / AirDrop) — same fix as
+     snapshots; a raw download link opens odd app pickers on iOS */
+  if(!(_isPhone()&&_shareFile(b,fn,'application/json')))_dlBlob(b,fn);
   var meta=scLoad(SC_KEYS.meta,{});meta.lastBackup=Date.now();scSave(SC_KEYS.meta,meta);backRender();
 }
 function backImport(inp){

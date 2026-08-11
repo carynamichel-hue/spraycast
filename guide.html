@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SprayCast — the how-to guide</title>
+<style>
+:root{--acc:#0e5a8a;--txt:#16242e;--txt2:#51636f;--bdr:#d5dde3;--bg:#f2f6f9;--good:#2e7d4f;--marg:#a07d1c;--bad:#b3413c;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);line-height:1.6;font-size:15px;}
+.hdr{background:var(--acc);color:#fff;padding:18px 16px;}
+.hdr h1{margin:0;font-size:22px;}
+.hdr .sub{opacity:.85;font-size:13.5px;margin-top:4px;}
+main{max-width:760px;margin:0 auto;padding:16px 14px 60px;}
+h2{font-size:19px;margin:34px 0 8px;color:var(--acc);border-bottom:2px solid var(--bdr);padding-bottom:4px;}
+h3{font-size:15.5px;margin:20px 0 6px;}
+p{margin:8px 0;}
+ol,ul{margin:8px 0;padding-left:22px;}
+li{margin:4px 0;}
+img{max-width:100%;height:auto;border:1px solid var(--bdr);border-radius:10px;margin:8px 0;box-shadow:0 3px 12px rgba(0,0,0,.08);}
+.tip{background:#e8f1e9;border-left:4px solid var(--good);padding:8px 12px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px;}
+.warn{background:#fdf0ef;border-left:4px solid var(--bad);padding:8px 12px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px;}
+.toc{background:#fff;border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;margin:16px 0;}
+.toc a{display:block;color:var(--acc);text-decoration:none;padding:2px 0;font-size:14px;}
+.toc a:hover{text-decoration:underline;}
+code,kbd{background:#e7edf2;border-radius:4px;padding:1px 6px;font-size:13px;}
+.chip{display:inline-block;padding:1px 8px;border-radius:9px;font-size:12.5px;font-weight:700;}
+.c-good{background:#b7e0c2;} .c-marg{background:#f1dfa4;} .c-bad{background:#f0d3d3;} .c-off{background:#eef1f4;color:var(--txt2);}
+.ftr{text-align:center;font-size:12px;color:var(--txt2);padding:20px;}
+.ftr a{color:var(--acc);}
+a{color:var(--acc);}
+</style>
+</head>
+<body>
+<div class="hdr"><h1>🌦 SprayCast — the how-to guide</h1>
+<div class="sub">Plan spray windows around the forecast: wind, gusts, rain, temperature and drift direction. Free, no accounts, your data never leaves your device.</div></div>
+<main>
+
+<div class="toc">
+<b>On this page</b>
+<a href="#start">1 · Two-minute start</a>
+<a href="#planner">2 · Reading the planner</a>
+<a href="#profiles">3 · Profiles — your own spray rules</a>
+<a href="#schedule">4 · Scheduling a spray (and getting reminded)</a>
+<a href="#watches">5 · Watches — let the app wait for the weather</a>
+<a href="#map">6 · The wind map</a>
+<a href="#sheet">7 · The Google-Sheet bridge (the full walkthrough)</a>
+<a href="#share">8 · Backups, sharing and your phone</a>
+<a href="#faq">9 · Questions people actually ask</a>
+</div>
+
+<h2 id="start">1 · Two-minute start</h2>
+<ol>
+<li>Open <a href="./">SprayCast</a>. You land on <b>⚙ Setup</b>.</li>
+<li>Type your town in <b>Find your town</b> → Search → tap your town. That's the whole setup.</li>
+<li>Tap <b>📆 Planner</b>. You're looking at two weeks of forecast judged against sensible default limits.</li>
+</ol>
+<p><img src="guide-planner-phone.png" alt="SprayCast planner on a phone: day cards, then the week grid" width="390"></p>
+<div class="tip">📱 <b>On a phone:</b> use your browser's share button → <b>Add to Home Screen</b>. You get an app icon, it opens full-screen, and it still opens with no signal (showing the last forecast it fetched).</div>
+
+<h2 id="planner">2 · Reading the planner</h2>
+<h3>The day cards</h3>
+<p>One card per forecast day — swipe sideways for more. The chip is the day's verdict under your active profile:
+<span class="chip c-good">Good · 9h</span> = nine sprayable hours, <span class="chip c-marg">Tight · 2h</span> = it's going to be a squeeze,
+<span class="chip c-off">No window</span> = don't bother. "best 6&nbsp;AM–1&nbsp;PM" is the longest clean stretch. Tap a card for the hour-by-hour table with the reasons (wind 14 mph, rain 60%…).</p>
+<h3>The week grid</h3>
+<p><img src="guide-week-desktop.png" alt="The week planner grid: columns are days, rows are hours, colors are the verdict"></p>
+<p>Columns are days, rows are hours:</p>
+<ul>
+<li><span class="chip c-good">green</span> good · <span class="chip c-marg">amber</span> marginal · <span class="chip c-bad">red</span> blocked by weather · <span class="chip c-off">gray</span> outside your spray hours (striped gray = off-hours but the weather would cooperate if you're forced to spray late).</li>
+<li><b>Blue blocks</b> are your scheduled sprays — tap one for calendar/done/delete.</li>
+<li><b>Dashed amber outlines</b> are watch windows (penciled in, not scheduled).</li>
+<li><b>◀ pages back</b> through ~13 weeks of the weather that <i>actually happened</i>, with your sprays where you scheduled them — handy for "could we have sprayed last Tuesday?" arguments and records. <b>▶ peeks a week ahead</b> (treat days 8–14 as a sketch, not a promise).</li>
+<li><b>⛶ Full screen</b> shows the whole week at once — on a phone held upright it rotates itself sideways.</li>
+<li><b>📸 Snapshot</b> makes a PNG of the grid (with legend and location on it), ready to text the crew.</li>
+</ul>
+
+<h2 id="profiles">3 · Profiles — your own spray rules</h2>
+<p>A profile is what "sprayable" means <i>to you</i>: wind ceiling, gust ceiling, rain-chance limits, temperature range, acceptable wind directions, and your spray hours per weekday (overnight windows like 20:00→04:00 are fine — they run into the next morning). The ✎ next to the profile dropdown manages them.</p>
+<ul>
+<li><b>Two numbers per limit:</b> e.g. wind "good up to 8, blocked at 12" — between the two is <i>marginal</i> (amber).</li>
+<li><b>Wind direction:</b> tick the directions you can accept wind FROM (think: what's downwind of the block — a pond, a neighbor, a road). Leave all unticked for "any".</li>
+<li>Make one profile per job if the rules differ — "Herbicide (strict)" vs "Fungicide (relaxed)" — and switch with the dropdown. Every card, grid cell and watch re-judges instantly.</li>
+</ul>
+
+<h2 id="schedule">4 · Scheduling a spray (and getting reminded)</h2>
+<ol>
+<li>Tap <b>📌 Plan Spray</b> (top bar) — or tap a good-looking cell in the grid first; the form follows the day you tapped.</li>
+<li>Name it, pick the day and hours (an end earlier than the start = an overnight spray finishing next morning), <b>💾 Schedule spray</b>.</li>
+<li>On the spray's block or in <b>📌 Sprays</b>, tap <b>📅 Calendar</b> — the file carries its own <b>12-hour and 1-hour reminders</b> into Outlook, Gmail or Apple Calendar. That's how reminders reach you while SprayCast is closed.</li>
+</ol>
+<div class="tip">⚠ <b>Drift watch:</b> once a spray is scheduled, SprayCast re-checks its hours against every forecast refresh. If the weather shifts and hours fall outside your limits, the block gets a dashed red outline, the ledger explains why, and (with 🔔 Alerts on) you get a chime.</div>
+
+<h2 id="watches">5 · Watches — let the app wait for the weather</h2>
+<p>A watch is a spray you're <i>waiting</i> to make: "Fungicide, block A — needs 4 quiet hours, wind from NW only." Create one on the <b>⏰ Watches</b> tab. Every forecast refresh, the watch hunts all its locations for the first long-enough window and shows it as <b>Next match</b>; matched windows are penciled onto the grid as dashed outlines.</p>
+<ul>
+<li><b>📌 Schedule</b> next to a match turns it into a scheduled spray in two taps (the watch's rules ride along for the drift-watch).</li>
+<li><b>One-time</b> watches disappear once scheduled; <b>recurring</b> ones keep watching (good for a spray you repeat every couple of weeks).</li>
+<li>Turn on <b>🔔 Alerts</b> (⚙ Setup) and SprayCast chimes when a watch finds a NEW window — while the page is open.</li>
+</ul>
+
+<h2 id="map">6 · The wind map</h2>
+<p><b>🧭 Wind map</b> (top right) shows your farm on satellite imagery with a live wind-direction arrow — the big arrow flies <i>with</i> the wind, and the shaded cone behind it is where drift goes. Small arrows show the wind field across the whole view.</p>
+<ul>
+<li>Drag to pan, pinch (or +/−) to zoom. The slider scrubs the next 48 hours — watch the wind swing before you pick your window.</li>
+<li><b>🎛 Set Wind Manually</b> answers "what if it comes from the south at 10?" without waiting for that forecast.</li>
+<li>If the pin isn't on the actual yard: pan until it's right and tap <b>📍 Use this map center as my forecast point</b> — the forecast re-fetches for that exact spot.</li>
+</ul>
+
+<h2 id="sheet">7 · The Google-Sheet bridge (the full walkthrough)</h2>
+<p><b>Optional, but worth the 3 minutes.</b> Once connected, every spray you schedule (and later mark done or delete) appears as a row on a Google Sheet you own — so the crew or the boss sees the plan without ever opening SprayCast. One person sets it up; coworkers who import your backup file write to the same sheet.</p>
+<h3>Step 1 — make the form</h3>
+<ol>
+<li>Go to <a href="https://docs.google.com/forms" target="_blank" rel="noopener">forms.google.com</a> → blank form. Name it anything ("Spray plan").</li>
+<li>Add <b>seven short-answer questions</b> titled: <i>Date, Start, End, Spray, Location, Notes, Status</i>. (Exact titles don't matter; Date/Time question types also work.)</li>
+<li>Make sure <b>no question is marked Required</b>.</li>
+<li>Settings → Responses → <b>Collect email addresses: OFF</b>, and if you see it, <b>Limit to 1 response: OFF</b>.</li>
+<li>Click <b>Publish</b> (top right). <b>Do not skip this</b> — see the warning below.</li>
+</ol>
+<div class="warn">🛑 <b>The #1 gotcha:</b> a form that was never <b>Published</b> silently rejects every row — SprayCast can't see the rejection, so everything looks fine and the sheet stays empty. If rows never land: check Publish first, then email-collection OFF, then Limit-to-1 OFF, then Required questions.</div>
+<h3>Step 2 — get the sheet</h3>
+<p>In the form's <b>Responses</b> tab, click the green Sheets icon. That spreadsheet is your shared list — share it with the crew like any sheet. Rows land on its "Form Responses" tab.</p>
+<h3>Step 3 — connect SprayCast</h3>
+<ol>
+<li>In the form: <b>⋮ menu → Get pre-filled link</b>.</li>
+<li>In the pre-filled form, type the marker words <code>date</code>, <code>start</code>, <code>end</code>, <code>spray</code>, <code>location</code>, <code>notes</code>, <code>status</code> into their matching boxes (this is how SprayCast learns which box is which).</li>
+<li><b>Get link → Copy</b>, paste it into ⚙ Setup → 📤 → <b>Connect</b>.</li>
+<li>Press <b>🧪 Send a test row</b> and check the sheet. If nothing lands, press <b>🔎 Debug in a tab</b> — it opens the form pre-filled in a real tab where Google will tell you what it doesn't like.</li>
+</ol>
+
+<h2 id="share">8 · Backups, sharing and your phone</h2>
+<ul>
+<li><b>🔗 Copy a setup link</b> (⚙ Setup → 💾) — sends your locations and profiles to a colleague as a plain link. They open it, tap OK, and their SprayCast is set up. It never carries your plans, watches or sheet connection.</li>
+<li><b>⬇ Export backup</b> — a file with everything (plans and watches included). Import it on a new device to move house, or hand it to a coworker to share the full setup including the sheet connection.</li>
+<li><b>📱 Phone warning:</b> iPhone/Safari can clear a site's saved data if you don't open it for a week or two. Export a backup after setup, open the app now and then, and Add to Home Screen — all three help.</li>
+<li><b>Updates:</b> after a new version ships, your phone shows it on the <b>second</b> full open. The version number in the footer tells you which copy you're looking at.</li>
+</ul>
+
+<h2 id="faq">9 · Questions people actually ask</h2>
+<p><b>Where does my data go?</b> Nowhere. No account, no server, no analytics. Everything you enter stays in your browser. The only internet requests are to Open-Meteo (forecast + town search), Esri map tiles (only while the wind map is open), and — only if you connect it — your own Google form. The page's source is public; anyone can check.</p>
+<p><b>Can it alert me when it's closed?</b> No — a page with no server can't push notifications while closed, and we won't pretend otherwise. The honest workarounds: schedule the spray and use the 📅 calendar file (its reminders fire from your calendar app), and make opening SprayCast with coffee a habit.</p>
+<p><b>Where does the forecast come from?</b> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, hourly for your exact coordinates, refreshed every 30 minutes while open. It's a forecast — the label always wins, and look up from the phone before you pull out of the yard.</p>
+<p><b>Two sites in the same town?</b> Save the town twice and give each a ✎ nickname ("Home farm", "Route 49 block"). Each gets its own forecast point — drag the wind map and use 📍 to pin each one to the actual yard.</p>
+<p><b>Shared crews or sprayers between farms?</b> 👀 Other farms (week planner) overlays another location's scheduled sprays on your calendar, hatched blue, so two sites don't book the same rig at the same hour.</p>
+<p><b>It says "Tight · 1h" but yesterday said more?</b> Today's card only counts hours that haven't already passed — mornings "disappear" from Today by afternoon. That's on purpose.</p>
+
+</main>
+<div class="ftr">SprayCast · <a href="./">open the app</a> · forecast data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · built at Overdevest Nurseries — questions? Ask Caryn.</div>
+</body>
+</html>
