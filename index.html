@@ -267,7 +267,7 @@ table.bigt col.cdl{width:64px;}
   <div class="days" id="days"></div>
   <div class="panel" id="ww-panel" style="display:none;">
     <div class="wwh"><span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><button class="caret" id="ww-caret" onclick="collToggle('ww')" title="Collapse / expand the week planner">▾</button>📆 Week planner
-        <button class="sbtn" id="ww-prev" onclick="wwNav(-1)" title="Back a week — up to ~13 weeks of the ACTUAL weather that happened, with your sprays where you committed them">◀</button>
+        <button class="sbtn" id="ww-prev" onclick="wwNav(-1)" title="Back a week — up to ~13 weeks of the ACTUAL weather that happened, with your sprays where you scheduled them">◀</button>
         <button class="sbtn" id="ww-next" onclick="wwNav(1)" title="Forward a week — the forecast runs two weeks out">▶</button>
         <span id="ww-range" class="note"></span></span>
       <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -276,7 +276,7 @@ table.bigt col.cdl{width:64px;}
         <button class="sbtn" onclick="outlookSend()" title="Write each of this week's days (Good 9h / Tight 2h / No window + the best stretch) as rows on your connected Google Sheet — for coworkers who never open SprayCast.">📤 Week summary → Google Sheet</button>
         <button class="sbtn" onclick="gridSnapshot()" title="Save the week planner as a picture (PNG) — with the location, profile and legend on it, ready to text the crew">📸 Snapshot</button>
         <span class="popwrap" id="other-wrap" style="display:none;">
-          <button class="sbtn" id="other-btn" onclick="otherMenuToggle(event)" title="For crews or sprayers shared between farms — pick which other locations' committed sprays to show on this calendar">👀 Other farms ▾</button>
+          <button class="sbtn" id="other-btn" onclick="otherMenuToggle(event)" title="For crews or sprayers shared between farms — pick which other locations' scheduled sprays to show on this calendar">👀 Other farms ▾</button>
           <span class="pop" id="other-pop"></span>
         </span>
       </span>
@@ -285,8 +285,8 @@ table.bigt col.cdl{width:64px;}
     <div id="wkgrid"></div>
     <div class="note" style="margin-top:6px;">🟩 good · 🟨 marginal · <span style="background:#f0d3d3;padding:0 6px;border-radius:3px;">blocked by weather</span> ·
     gray = outside your spray hours · <span style="background:repeating-linear-gradient(45deg,#f4f6f8 0,#f4f6f8 3px,#e2f0e6 3px,#e2f0e6 6px);padding:0 6px;border-radius:3px;">striped = off-hours but conditions would work</span> ·
-    <b style="color:var(--acc);">■ committed spray here</b> · <span style="background:repeating-linear-gradient(45deg,#5f87a3 0,#5f87a3 4px,#7fa3bc 4px,#7fa3bc 8px);color:#fff;padding:0 6px;border-radius:3px;font-weight:600;">hatched = another farm's spray</span> (pick which farms under 👀 Other farms) ·
-    <span style="outline:2px dashed var(--marg);outline-offset:-2px;padding:0 6px;border-radius:3px;">⏰ dashed = a watch's window</span> (penciled in, not committed — manage them on the ⏰ Watches tab). Click a spray block for calendar / done / delete; click any open cell for the hour-by-hour detail.
+    <b style="color:var(--acc);">■ scheduled spray here</b> · <span style="background:repeating-linear-gradient(45deg,#5f87a3 0,#5f87a3 4px,#7fa3bc 4px,#7fa3bc 8px);color:#fff;padding:0 6px;border-radius:3px;font-weight:600;">hatched = another farm's spray</span> (pick which farms under 👀 Other farms) ·
+    <span style="outline:2px dashed var(--marg);outline-offset:-2px;padding:0 6px;border-radius:3px;">⏰ dashed = a watch's window</span> (penciled in, not scheduled — manage them on the ⏰ Watches tab). Click a spray block for calendar / done / delete; click any open cell for the hour-by-hour detail.
     <b>◀ pages back</b> through ~13 weeks of the weather that <i>actually happened</i> (your sprays stay on it) · <b>▶ peeks a week ahead</b>.
     The day cards up top: <b>Good / Tight</b> = how many sprayable hours that day offers under your profile.</div>
     </div>
@@ -302,7 +302,7 @@ table.bigt col.cdl{width:64px;}
     <h2>Welcome to SprayCast 🌦</h2>
     <div class="sub" style="margin-bottom:0;">Start on the <b>⚙ Setup</b> tab and add your <b>📍 location</b> (type your town — that's the whole setup). Then this
     Planner shows how many sprayable hours each day offers under your active <b>⚙ profile</b> (your own rules for what "sprayable" means),
-    the 📌 button up top commits a spray — puts it on the calendar at a chosen hour —
+    the 📌 button up top schedules a spray at a chosen hour,
     and the ⏰ Watches tab alerts you when the right window shows up. Your data stays in this browser — nothing is uploaded anywhere.</div>
   </div>
   </div>
@@ -310,21 +310,21 @@ table.bigt col.cdl{width:64px;}
   <div class="page" id="page-watches" style="display:none;">
     <div class="panel">
       <div class="wwh">⏰ Spray watches <button class="sbtn pri" onclick="watchForm(null)">＋ New watch</button></div>
-      <div class="note" style="margin-bottom:8px;">A watch is a spray you're waiting to make: it checks every forecast day at its location(s) and lights up when a long-enough window appears — penciled onto the Planner grid as a dashed ⏰ outline. One-time watches are removed once you commit them; recurring ones keep watching.</div>
+      <div class="note" style="margin-bottom:8px;">A watch is a spray you're waiting to make: it checks every forecast day at its location(s) and lights up when a long-enough window appears — penciled onto the Planner grid as a dashed ⏰ outline. One-time watches are removed once you schedule them; recurring ones keep watching.</div>
       <div id="watch-table"></div>
     </div>
   </div>
 
   <div class="page" id="page-sprays" style="display:none;">
     <div class="panel">
-      <div class="wwh">📌 Committed sprays
+      <div class="wwh">📌 Scheduled sprays
         <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <select class="pill" id="spray-loc-filter" onchange="renderSpraysPage()" style="font-size:12px;padding:5px 10px;"></select>
           <button class="sbtn" onclick="sprayCsvPage()" title="Download the list as a spreadsheet (opens in Excel)">⬇ Excel</button>
           <button class="sbtn" onclick="icsAllPage()">📅 Upcoming → calendar</button>
         </span>
       </div>
-      <div class="note" style="margin-bottom:6px;">⚠ on a spray means the forecast has SHIFTED since you committed it and some of its hours
+      <div class="note" style="margin-bottom:6px;">⚠ on a spray means the forecast has SHIFTED since you scheduled it and some of its hours
       are now outside your limits — with 🔔 Alerts on, SprayCast chimes when that happens.</div>
       <div id="spray-list"></div>
     </div>
@@ -347,13 +347,14 @@ table.bigt col.cdl{width:64px;}
     <div class="panel">
       <div class="wwh">🔔 Alerts on this device <button class="sbtn" id="bell-btn" onclick="bellToggle()">🔕 Alerts</button></div>
       <div class="note">When ON, SprayCast chimes and pops a note here whenever a watch finds a NEW window — it works while the page is open.
-      For reminders that reach you when SprayCast is closed, commit a spray and use its 📅 button: the calendar file carries its own
+      For reminders that reach you when SprayCast is closed, schedule a spray and use its 📅 button: the calendar file carries its own
       12-hour and 1-hour reminders into Outlook, Gmail or Apple Calendar.</div>
     </div>
     <div class="panel">
-      <div class="wwh">📤 Committed sprays → a shared Google Sheet</div>
-      <div class="note">Give the whole crew (or the boss) a live list of what's planned without anyone opening SprayCast:
-      commits — and later done/cancel updates — are written to a Google Sheet <b>you</b> own. One-time setup, about 3 minutes:
+      <div class="wwh">📤 Scheduled sprays → a shared Google Sheet</div>
+      <div class="note"><b>Optional, but worth the 3 minutes:</b> SprayCast works fine without it — connect it when you want
+      the whole crew (or the boss) seeing a live list of what's planned without anyone opening SprayCast.
+      Scheduled sprays — and later done/cancel updates — are written to a Google Sheet <b>you</b> own. One-time setup:
       <ol style="margin:6px 0 0 18px;line-height:1.6;">
         <li>Make a <b>Google Form</b> with <b>short-answer</b> questions: <i>Date, Start, End, Spray, Location, Notes, Status</i> (name them however you like — Date/Time question types work too). <b>Leave every question NOT-required</b>, set Settings → Responses → <b>Collect email addresses: OFF</b> — and then click <b>Publish</b> (top right; a form that was never published rejects every row).</li>
         <li>In the form's <b>Responses</b> tab click the Sheets icon — that spreadsheet is your shared list (share/publish it like any sheet).</li>
@@ -381,7 +382,7 @@ table.bigt col.cdl{width:64px;}
       <div class="wwh">ℹ About SprayCast</div>
       <div style="font-size:13px;line-height:1.55;color:var(--txt);">
       <p><b>Privacy, plainly:</b> there is no account, no install, and nothing you enter is uploaded anywhere — unless you connect
-      the optional 📤 Google-Sheet bridge, in which case committed sprays (and nothing else) are written to the Google Form/Sheet
+      the optional 📤 Google-Sheet bridge, in which case scheduled sprays (and nothing else) are written to the Google Form/Sheet
       <b>you</b> set up. Your locations, profiles, watches and plans are stored only in this browser on this device. The internet
       requests are: <b>Open-Meteo</b> (a free public weather service) for the forecast and town search; <b>Esri's</b> public
       satellite imagery tiles, only while the 🧭 wind map is open; and your own Google form, only if you connect it.</p>
@@ -394,7 +395,7 @@ table.bigt col.cdl{width:64px;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.14 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.15 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
@@ -484,7 +485,7 @@ built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
   <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:12px;margin-top:10px;"><input type="checkbox" id="wf-rec"> Recurring — keep watching after each match (weekly sprays)</label>
   <div class="row" style="margin-top:14px;">
     <button class="btn pri" onclick="watchSave()">💾 Save watch</button>
-    <button class="btn" id="wf-commit" style="display:none;" onclick="watchCommit()">📌 Commit next match</button>
+    <button class="btn" id="wf-commit" style="display:none;" onclick="watchCommit()">📌 Schedule next match</button>
     <button class="btn" onclick="mClose('m-watch')">Cancel</button>
     <button class="btn warn" id="wf-del" style="display:none;" onclick="watchDelFromForm()">🗑 Delete</button>
   </div>
@@ -517,7 +518,7 @@ built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
   </div>
   <label>Notes (optional)</label><input type="text" id="plf-notes" placeholder="product, rate, houses…">
   <div class="row" style="margin-top:14px;">
-    <button class="btn pri" onclick="planSave()">💾 Commit spray</button>
+    <button class="btn pri" onclick="planSave()">💾 Schedule spray</button>
     <button class="btn" onclick="planDrawerClose()">Cancel</button>
   </div>
 </div>
@@ -1230,9 +1231,9 @@ function planSave(){
   sheetSend(pl,'planned');
   if(_planPrefill&&_planPrefill.watchId){
     var w=watches.find(function(x){return x.id===_planPrefill.watchId;});
-    if(w&&!w.recurring){watches=watches.filter(function(x){return x.id!==w.id;});scSave(SC_KEYS.watches,watches);toast('Committed — one-time watch retired. 📅 exports it to your calendar.');}
-    else toast('Spray committed — 📅 exports it to your calendar');
-  } else toast('Spray committed — 📅 exports it to your calendar');
+    if(w&&!w.recurring){watches=watches.filter(function(x){return x.id!==w.id;});scSave(SC_KEYS.watches,watches);toast('Scheduled — one-time watch removed. 📅 exports it to your calendar.');}
+    else toast('Spray scheduled — 📅 exports it to your calendar');
+  } else toast('Spray scheduled — 📅 exports it to your calendar');
   planDrawerClose();
   renderWW();renderDays();
 }
@@ -1293,8 +1294,8 @@ function sprayCsvPage(){
   var f=_sprayFilterLoc();
   var rows=plans.filter(function(p){return !f||p.locId===f;})
     .sort(function(a,b){return a.date===b.date?a.from-b.from:(a.date<b.date?-1:1);});
-  if(!rows.length){toast('Nothing committed yet — nothing to export');return;}
-  var out=[['Date','Day','Start','End','Spray','Location','Notes','Status','Committed on','Sent to sheet']];
+  if(!rows.length){toast('Nothing scheduled yet — nothing to export');return;}
+  var out=[['Date','Day','Start','End','Spray','Location','Notes','Status','Scheduled on','Sent to sheet']];
   var today=todayLoc();
   rows.forEach(function(pl){
     out.push([pl.date,new Date(pl.date+'T12:00:00').toLocaleDateString([],{weekday:'short'}),
@@ -1363,7 +1364,7 @@ function sheetConnect(){
   sheetTest();
 }
 function sheetDisconnect(){
-  if(!confirm('Disconnect the Google Sheet? (Nothing already sent is removed; new commits just stay in this browser.)'))return;
+  if(!confirm('Disconnect the Google Sheet? (Nothing already sent is removed; newly scheduled sprays just stay in this browser.)'))return;
   try{localStorage.removeItem(SC_KEYS.sheet);}catch(e){}
   sheetRender();
 }
@@ -1412,7 +1413,7 @@ function sheetRender(){
   var box=document.getElementById('gs-status');if(!box)return;
   var cfg=sheetCfg();
   if(!cfg){box.innerHTML='<div class="li" style="border:none;color:var(--txt2);">Not connected.</div>';return;}
-  box.innerHTML='<div class="li" style="flex-wrap:wrap;"><div class="grow"><b>📤 Connected</b><small>new commits (and done/cancel updates) flow to the sheet · set up '
+  box.innerHTML='<div class="li" style="flex-wrap:wrap;"><div class="grow"><b>📤 Connected</b><small>newly scheduled sprays (and done/cancel updates) flow to the sheet · set up '
     +new Date(cfg.at).toLocaleDateString()+(cfg.fields.status?'':' · no status field mapped — done/cancel updates are skipped')+'</small></div>'
     +((cfg.sheetUrl&&/^https?:\/\//i.test(cfg.sheetUrl))?'<a class="sbtn" href="'+esc(cfg.sheetUrl)+'" target="_blank" rel="noopener">Open the sheet →</a>':'<button class="sbtn" onclick="sheetSheetUrl()">＋ sheet link</button>')
     +'<button class="sbtn" onclick="sheetTest()" title="Sends one obvious TEST row invisibly — check it appears in the sheet">🧪 Test row</button>'
@@ -1437,7 +1438,7 @@ function renderSpraysPage(){
   var f=_sprayFilterLoc();
   var rows=plans.filter(function(p){return !f||p.locId===f;})
     .sort(function(a,b){return a.date===b.date?a.from-b.from:(a.date<b.date?-1:1);});
-  if(!rows.length){box.innerHTML='<div class="li" style="border:none;color:var(--txt2);">Nothing committed yet — use 📌 Plan a spray up top, or Commit a matched watch.</div>';return;}
+  if(!rows.length){box.innerHTML='<div class="li" style="border:none;color:var(--txt2);">Nothing scheduled yet — use 📌 Plan Spray up top, or Schedule a matched watch.</div>';return;}
   var today=todayLoc();
   box.innerHTML=rows.map(function(pl){
     var past=pl.date<today;
@@ -1486,7 +1487,7 @@ function renderWatchesPage(){
         +'<td>'+(w.recurring?'recurring':'one-time')+'</td>'
         +'<td>'+(n?('<b>'+dayShort(n.day)+' '+scFmtRun(n.run)+'</b> @ '+esc(locName(n.locId))):'<span style="color:var(--txt2);">no match in this forecast</span>')+'</td>'
         +'<td style="white-space:nowrap;">'
-        +(n?'<button class="sbtn pri" onclick="planFromWatch(\''+w.id+'\')">📌 Commit</button> ':'')
+        +(n?'<button class="sbtn pri" onclick="planFromWatch(\''+w.id+'\')">📌 Schedule</button> ':'')
         +'<button class="sbtn" onclick="watchForm(\''+w.id+'\')">✎</button></td>'
         +'</tr>';
     }).join('')+'</table></div>';
@@ -1534,7 +1535,7 @@ function renderOtherMenu(){
   var n=sel.filter(function(id){return others.some(function(o){return o.id===id;});}).length;
   document.getElementById('other-btn').textContent='👀 Other farms'+(n?' ('+n+')':'')+' ▾';
   document.getElementById('other-pop').innerHTML=
-    '<div class="pt">Show committed sprays from:</div>'
+    '<div class="pt">Show scheduled sprays from:</div>'
     +others.map(function(o){
       return '<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleOtherLoc(\''+o.id+'\',this.checked)"'+(sel.indexOf(o.id)>=0?' checked':'')+'> '+esc(o.name)+'</label>';
     }).join('');
@@ -1671,7 +1672,7 @@ function bigWkRender(){
   inner.innerHTML='<div id="bigwk-tbl" style="position:absolute;transform-origin:top left;">'
     +'<div class="bwh">📆 '+esc(l.name)+' · '+esc(p.name)+(now?'':' · '+dayShort(view[0])+' – '+dayShort(view[view.length-1])+(past?' · actual weather':' · forecast'))+'</div>'
     +'<table class="wk bigt"><colgroup><col class="cdl"></colgroup>'+head+rows+'</table>'
-    +'<div class="bwn">🟩 good · 🟨 marginal · 🟥 blocked by weather · gray = outside spray hours (striped = would work) · ■ committed spray · dashed ⏰ = watch window</div>'
+    +'<div class="bwn">🟩 good · 🟨 marginal · 🟥 blocked by weather · gray = outside spray hours (striped = would work) · ■ scheduled spray · dashed ⏰ = watch window</div>'
     +'</div>';
   var base='position:absolute;background:#fff;overflow:hidden;';
   if(portrait){
@@ -2218,7 +2219,7 @@ function gridSnapshot(){
       lx+=g.measureText(e[0]).width+34;
     });
     g.fillStyle='#0e5a8a';g.fillRect(lx,ly-9,12,11);
-    g.fillStyle='#3a4a58';g.fillText('committed spray',lx+16,ly);
+    g.fillStyle='#3a4a58';g.fillText('scheduled spray',lx+16,ly);
     g.fillStyle='#7b8a96';g.font='10px "Segoe UI", system-ui, sans-serif';
     g.fillText('forecast: Open-Meteo · made with SprayCast',12,H-7);
     c.toBlob(function(b){
@@ -2314,7 +2315,7 @@ function alertCheck(quiet){
   }
   if(drifted.length){
     beep();
-    toast('⚠ Committed spray: '+drifted[0]+(drifted.length>1?' (+'+(drifted.length-1)+' more)':''));
+    toast('⚠ Scheduled spray: '+drifted[0]+(drifted.length>1?' (+'+(drifted.length-1)+' more)':''));
     try{if(window.Notification&&Notification.permission==='granted')new Notification('SprayCast — forecast shifted',{body:drifted.join(' · ')});}catch(e){}
   }
 }
