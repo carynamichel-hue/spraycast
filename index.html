@@ -386,7 +386,7 @@ table.bigt col.cdl{width:64px;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.12 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.13 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
@@ -1250,11 +1250,32 @@ function icsDownload(evts,fname){
   var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();
 }
 function icsOne(id){var p=plans.find(function(x){return x.id===id;});if(p)icsDownload([scPlanEvent(p)],'Spray_'+p.date+'.ics');}
+/* ── file hand-off: on a PHONE the native share sheet is the honest flow
+   (preview + Save Image / Save to Files / Messages / Mail) — a hidden
+   download link on iOS lands in odd "open in …?" app pickers or Notes.
+   Desktop keeps the plain download. ── */
+function _isPhone(){try{return matchMedia('(pointer:coarse)').matches&&typeof navigator!=='undefined'&&!!navigator.canShare;}catch(e){return false;}}
+function _dlBlob(b,fname){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();}
+function _shareFile(b,fname,mime){
+  try{
+    var f=new File([b],fname,{type:mime});
+    if(navigator.canShare({files:[f]})){
+      navigator.share({files:[f]}).catch(function(e){
+        /* the user closing the sheet is not an error — anything else
+           falls back to a plain download */
+        if(!e||e.name!=='AbortError')_dlBlob(b,fname);
+      });
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 /* ── ⬇ Excel export of the committed-spray ledger ── */
 function dlText(fname,text,mime){
   /* leading BOM so Excel opens UTF-8 CSVs with accents intact */
   var b=new Blob(['﻿'+text],{type:mime||'text/csv;charset=utf-8'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();
+  if(_isPhone()&&_shareFile(b,fname,'text/csv'))return;
+  _dlBlob(b,fname);
 }
 function sprayCsvPage(){
   var f=_sprayFilterLoc();
@@ -2090,7 +2111,9 @@ function mapWind(){
    (same idea as BlightCast's chart snapshot: download + clipboard copy)
    ════════════════════════════════════════════════════════════════════════ */
 function _snapShare(b,fname){
-  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();
+  /* phone: straight to the share sheet — Save Image, text it, AirDrop it */
+  if(_isPhone()&&_shareFile(b,fname,'image/png'))return;
+  _dlBlob(b,fname);
   var copied=false;
   try{
     if(typeof navigator!=='undefined'&&navigator.clipboard&&typeof ClipboardItem!=='undefined'){
