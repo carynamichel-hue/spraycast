@@ -136,6 +136,7 @@ table.bigt td{height:46px;font-size:15px;padding:0 2px;cursor:default;}
 table.bigt td.dlbl{background:none;border:none;text-align:right;color:var(--txt2);padding-right:7px;font-size:12px;font-weight:700;white-space:nowrap;}
 table.bigt td.dlbl.today{color:var(--acc);}
 table.bigt col.cdl{width:64px;}
+.sbtn:disabled{opacity:.35;cursor:default;}
 #bigwk-inner .bwh{font-weight:800;font-size:14px;margin:0 0 6px;color:var(--txt);}
 #bigwk-inner .bwn{font-size:10.5px;color:var(--txt2);margin-top:6px;}
 /* wind map (Phase 3) — DIY Esri tile grid, no map library */
@@ -265,7 +266,10 @@ table.bigt col.cdl{width:64px;}
   <div class="page" id="page-planner">
   <div class="days" id="days"></div>
   <div class="panel" id="ww-panel" style="display:none;">
-    <div class="wwh"><span style="display:flex;align-items:center;gap:6px;"><button class="caret" id="ww-caret" onclick="collToggle('ww')" title="Collapse / expand the week planner">▾</button>📆 Week planner</span>
+    <div class="wwh"><span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><button class="caret" id="ww-caret" onclick="collToggle('ww')" title="Collapse / expand the week planner">▾</button>📆 Week planner
+        <button class="sbtn" id="ww-prev" onclick="wwNav(-1)" title="Look back a week — the ACTUAL weather that happened, with your sprays where you committed them">◀</button>
+        <button class="sbtn" id="ww-next" onclick="wwNav(1)" title="Forward a week, back toward today">▶</button>
+        <span id="ww-range" class="note"></span></span>
       <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="sbtn" onclick="bigWkOpen()" title="Open the week planner FULL SCREEN — on a phone held upright it turns sideways by itself, so the whole week fits big and readable without touching your rotation lock">⛶ Big</button>
         <button class="sbtn" onclick="hourlyCsv()" title="Download the hour-by-hour conditions forecast as a spreadsheet — temp, wind, gusts, rain, direction, and the good/marginal/blocked rating with reasons, for the whole week (opens in Excel)">⬇ Hourly Excel</button>
@@ -382,7 +386,7 @@ table.bigt col.cdl{width:64px;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.10 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.11 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
@@ -845,6 +849,7 @@ var state=scLoad(SC_KEYS.state,{activeLoc:null,activeProfile:profs[0].id});
 var watches=scLoad(SC_KEYS.watches,[]);
 var plans=scLoad(SC_KEYS.plans,[]);
 var wxCache=null, selDay=null, daysCache=[], wxDaysByLoc={}, _pendingCommit=null;
+var wxPastCache=[], wwOff=0, _wwView=null;   /* 🗓 week-planner look-back state */
 /* migrate pre-location records: stamp them with the active location (08-08) */
 (function(){
   var def=state.activeLoc||(locs[0]&&locs[0].id)||null,ch=false;
@@ -950,7 +955,7 @@ function locAdd(i){
   scSave(SC_KEYS.locs,locs);scSave(SC_KEYS.state,state);
   locRenderList();wxCache=null;renderAll();toast('Location saved — fetching the forecast');
 }
-function locUse(id){state.activeLoc=id;scSave(SC_KEYS.state,state);locRenderList();wxCache=null;renderAll();}
+function locUse(id){state.activeLoc=id;scSave(SC_KEYS.state,state);locRenderList();wxCache=null;wwOff=0;renderAll();}
 function locDel(id){
   locs=locs.filter(function(l){return l.id!==id;});
   if(state.activeLoc===id)state.activeLoc=locs[0]?locs[0].id:null;
@@ -1076,7 +1081,7 @@ function prefetchWatchLocs(){
   });
   Object.keys(need).forEach(function(id){
     var l=locs.find(function(x){return x.id===id;});if(!l)return;
-    wxFetchLoc(l,function(d){wxDaysByLoc[id]=d?wxDays(d):[];renderWW();renderDays();alertCheck();});
+    wxFetchLoc(l,function(d){wxDaysByLoc[id]=d?wxSplitDays(d).days:[];renderWW();renderDays();alertCheck();});
   });
 }
 function dayShort(day){return new Date(day.date+'T12:00:00').toLocaleDateString([], {weekday:'short',month:'numeric',day:'numeric'});}
@@ -1452,8 +1457,9 @@ function renderWatchesPage(){
     }).join('')+'</table></div>';
 }
 function showLocsHere(){var l=activeLoc();return (l&&l.showLocs)||[];}
-function planAt(day,h,i){
-  var prev=i>0?daysCache[i-1].date:null;
+function planAt(day,h,i,view){
+  var v=view||daysCache;
+  var prev=(i>0&&v[i-1])?v[i-1].date:null;
   var show=showLocsHere(),own=null,other=null;
   for(var k=0;k<plans.length;k++){
     var pl=plans[k];
@@ -1496,6 +1502,19 @@ function renderOtherMenu(){
       return '<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleOtherLoc(\''+o.id+'\',this.checked)"'+(sel.indexOf(o.id)>=0?' checked':'')+'> '+esc(o.name)+'</label>';
     }).join('');
 }
+/* 🗓 week-planner look-back: wwOff 0 = this week (forecast), -1 = the 7
+   days before today (ACTUAL weather), -2 = the week before that … up to
+   ~4 weeks (past_days=28). Committed sprays from those dates still draw. */
+function wwMinOff(){return -Math.ceil(wxPastCache.length/7);}
+function wwNav(d){
+  wwOff=Math.min(0,Math.max(wwMinOff(),wwOff+d));
+  renderWW();
+}
+function wwView(){
+  if(wwOff===0)return daysCache;
+  var end=wxPastCache.length+(wwOff+1)*7;      /* -1 → the last 7 past days */
+  return wxPastCache.slice(Math.max(0,end-7),Math.max(0,end));
+}
 /* watch windows penciled in per day: hour → [{name,first}] — an overnight
    run (to>24) spills its morning hours into the NEXT day's column */
 function wkOutlines(){
@@ -1515,13 +1534,14 @@ function wkOutlines(){
   return maps;
 }
 /* one week-grid cell — shared by the live grid and the ⛶ big view (which is
-   view-only: no onclick, plan labels shrink to just the pin) */
-function wkTd(p,day,i,h,wOutline,live){
-  var pa=planAt(day,h,i);
+   view-only: no onclick, plan labels shrink to just the pin). view/past:
+   the look-back renders a past week (actual weather; no drift, no selDay) */
+function wkTd(p,day,i,h,wOutline,live,view,past){
+  var pa=planAt(day,h,i,view);
   if(pa){
     var pl=pa.pl;
     var first=(pl.date===day.date&&h===pl.from);
-    var dr=(!pl.done&&!pa.other)?planDrift(pl):null;
+    var dr=(!pl.done&&!pa.other&&!past)?planDrift(pl):null;
     var drifted=dr&&dr.bad>0;
     var full='📌 '+esc(pl.name)+(pa.other?' @'+esc(locName(pl.locId)):'');
     var lbl=first?((drifted?'⚠ ':'')+(live?full:'📌')):'';
@@ -1541,24 +1561,37 @@ function wkTd(p,day,i,h,wOutline,live){
   var wo=wOutline[i][h];
   var tip=dayShort(day)+' '+scFmtHour(h)+' — '+tips[st]
     +(wo?' · ⏰ watch: '+wo.map(function(x){return x.name;}).join(', '):'');
-  return '<td class="c-'+st+(wo?' c-watch':'')+'"'+(live?' onclick="selDay='+i+';renderDays();renderDetail(daysCache['+i+'],activeProf());document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});"':'')+' title="'+esc(tip)+'">'
+  var click=past
+    ?' onclick="renderDetail(_wwView['+i+'],activeProf());document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});"'
+    :' onclick="selDay='+i+';renderDays();renderDetail(daysCache['+i+'],activeProf());document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});"';
+  return '<td class="c-'+st+(wo?' c-watch':'')+'"'+(live?click:'')+' title="'+esc(tip)+'">'
     +(wo&&wo.some(function(x){return x.first;})?'⏰':'')+'</td>';
 }
 function renderWkGrid(){
   var p=activeProf(),el=document.getElementById('wkgrid');
-  if(!daysCache.length){el.innerHTML='';return;}
-  var head='<tr><th></th>'+daysCache.map(function(day,i){
-    return '<th'+(i===0?' class="today"':'')+'>'+(i===0?'Today':dayShort(day))+'</th>';
+  var view=wwView(),past=wwOff<0;
+  _wwView=view;
+  /* look-back nav state */
+  var pb=document.getElementById('ww-prev'),nb=document.getElementById('ww-next'),rl=document.getElementById('ww-range');
+  if(pb)pb.disabled=!wxPastCache.length||wwOff<=wwMinOff();
+  if(nb)nb.disabled=wwOff===0;
+  if(rl)rl.textContent=past?(view.length?dayShort(view[0])+' – '+dayShort(view[view.length-1])+' · actual weather':''):'';
+  if(!view.length){
+    el.innerHTML=past?'<div class="note" style="padding:10px 2px;">No saved weather that far back — the look-back covers about 4 weeks.</div>':'';
+    return;
+  }
+  var head='<tr><th></th>'+view.map(function(day,i){
+    return '<th'+((!past&&i===0)?' class="today"':'')+'>'+((!past&&i===0)?'Today':dayShort(day))+'</th>';
   }).join('')+'</tr>';
-  var wOutline=wkOutlines();
+  var wOutline=past?view.map(function(){return {};}):wkOutlines();
   var rows='';
   for(var h=0;h<24;h++){
     rows+='<tr><td class="hlbl">'+(h%2===0?scFmtHour(h):'')+'</td>';
     /* eslint-disable no-loop-func */
-    daysCache.forEach(function(day,i){rows+=wkTd(p,day,i,h,wOutline,true);});
+    view.forEach(function(day,i){rows+=wkTd(p,day,i,h,wOutline,true,view,past);});
     rows+='</tr>';
   }
-  el.innerHTML='<div style="overflow-x:auto;"><table class="wk"><colgroup><col class="chl">'+daysCache.map(function(){return '<col>';}).join('')+'</colgroup>'+head+rows+'</table></div>';
+  el.innerHTML='<div style="overflow-x:auto;"><table class="wk"><colgroup><col class="chl">'+view.map(function(){return '<col>';}).join('')+'</colgroup>'+head+rows+'</table></div>';
 }
 /* ── ⛶ full-screen week view: the SAME cells transposed (days down, hours
    across) so the whole week fits a landscape screen. On a phone held upright
@@ -1582,18 +1615,20 @@ function bigWkRender(){
   var vh=(typeof window!=='undefined'&&window.innerHeight)||600;
   var portrait=vh>vw;
   var W=portrait?vh:vw,H=portrait?vw:vh;      /* the landscape canvas */
-  var wOutline=wkOutlines();
+  var view=wwView(),past=wwOff<0;
+  if(!view.length)return;
+  var wOutline=past?view.map(function(){return {};}):wkOutlines();
   var head='<tr><th></th>';
   for(var h=0;h<24;h++)head+='<th>'+(h%2===0?scFmtHour(h).replace(' AM','a').replace(' PM','p'):'')+'</th>';
   head+='</tr>';
-  var rows=daysCache.map(function(day,i){
-    var r='<tr><td class="dlbl'+(i===0?' today':'')+'">'+(i===0?'Today':dayShort(day))+'</td>';
-    for(var hh=0;hh<24;hh++)r+=wkTd(p,day,i,hh,wOutline,false);
+  var rows=view.map(function(day,i){
+    var r='<tr><td class="dlbl'+((!past&&i===0)?' today':'')+'">'+((!past&&i===0)?'Today':dayShort(day))+'</td>';
+    for(var hh=0;hh<24;hh++)r+=wkTd(p,day,i,hh,wOutline,false,view,past);
     return r+'</tr>';
   }).join('');
   var inner=document.getElementById('bigwk-inner');
   inner.innerHTML='<div id="bigwk-tbl" style="position:absolute;transform-origin:top left;">'
-    +'<div class="bwh">📆 '+esc(l.name)+' · '+esc(p.name)+'</div>'
+    +'<div class="bwh">📆 '+esc(l.name)+' · '+esc(p.name)+(past?' · '+dayShort(view[0])+' – '+dayShort(view[view.length-1])+' · actual weather':'')+'</div>'
     +'<table class="wk bigt"><colgroup><col class="cdl"></colgroup>'+head+rows+'</table>'
     +'<div class="bwn">🟩 good · 🟨 marginal · 🟥 blocked by weather · gray = outside spray hours (striped = would work) · ■ committed spray · dashed ⏰ = watch window</div>'
     +'</div>';
@@ -1633,11 +1668,14 @@ function wxFetchLoc(l,cb){
   if(!l){cb(null);return;}
   var mk='spraycast_wx_'+l.id;
   try{var c=JSON.parse(localStorage.getItem(mk)||'null');
-    if(c&&c.at&&(Date.now()-c.at)<30*60000){cb(c.d,c.at);return;}}catch(e){}
+    /* the length check retires cached replies from before the look-back
+       existed (forecast-only = 168 hours; with past_days ≈ 840) */
+    if(c&&c.at&&(Date.now()-c.at)<30*60000
+      &&c.d&&c.d.hourly&&c.d.hourly.time&&c.d.hourly.time.length>300){cb(c.d,c.at);return;}}catch(e){}
   fetch('https://api.open-meteo.com/v1/forecast?latitude='+l.lat+'&longitude='+l.lon
     +'&hourly=temperature_2m,precipitation_probability,wind_speed_10m,wind_gusts_10m,wind_direction_10m'
     +'&daily=temperature_2m_max,temperature_2m_min,weather_code'
-    +'&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=7&timezone=auto')
+    +'&temperature_unit=fahrenheit&wind_speed_unit=mph&past_days=28&forecast_days=7&timezone=auto')
     .then(function(r){return r.json();})
     .then(function(d){try{localStorage.setItem(mk,JSON.stringify({d:d,at:Date.now()}));}catch(e){}cb(d,Date.now());})
     .catch(function(){ /* stale cache beats nothing */
@@ -1659,6 +1697,17 @@ function wxDays(d){
     if(d.daily&&d.daily.time){var di=d.daily.time.indexOf(o.date);
       if(di>=0){o.hi=d.daily.temperature_2m_max[di];o.lo=d.daily.temperature_2m_min[di];o.icon=WXICON[d.daily.weather_code[di]]||'🌤';}}
     return o;});
+}
+/* the reply now carries past_days of ACTUAL weather ahead of the forecast —
+   split at the location-local today so daysCache keeps meaning "today
+   forward" everywhere, and the look-back gets its own array */
+function wxSplitDays(d){
+  var all=wxDays(d);
+  var off=(d&&d.utc_offset_seconds)||0;
+  var today=new Date(Date.now()+off*1000).toISOString().slice(0,10);
+  var idx=0;
+  for(var i=0;i<all.length;i++){if(all[i].date===today){idx=i;break;}}
+  return {past:all.slice(0,idx),days:all.slice(idx)};
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -1691,7 +1740,8 @@ function renderAll(){
     wxCache=d;
     if(!d){document.getElementById('wx-note').textContent='⚠ forecast unavailable — check the internet connection';_pendingCommit=null;return;}
     document.getElementById('wx-note').textContent='forecast updated '+new Date(at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · refreshes every 30 min';
-    daysCache=wxDays(d);
+    var sp=wxSplitDays(d);
+    daysCache=sp.days;wxPastCache=sp.past;
     wxDaysByLoc={};wxDaysByLoc[reqId]=daysCache;
     if(selDay==null||selDay>=daysCache.length)selDay=0;
     renderDays();
@@ -2048,9 +2098,10 @@ function _snapShare(b,fname){
 /* the week planner, drawn straight from state (it's an HTML table on
    screen, so the picture is rebuilt on canvas rather than serialized) */
 function gridSnapshot(){
-  if(!daysCache.length){toast('Add a 📍 location first');return;}
+  var days=wwView(),past=wwOff<0;
+  if(!days.length){toast('Add a 📍 location first');return;}
   try{
-    var p=activeProf(),days=daysCache,n=days.length;
+    var p=activeProf(),n=days.length;
     var scale=2,LW=48,cw=104,rh=14,TH=22,head=50,leg=28,foot=20;
     var W=LW+cw*n+10,H=head+TH+24*rh+leg+foot;
     var c=document.createElement('canvas');c.width=W*scale;c.height=H*scale;
@@ -2059,16 +2110,16 @@ function gridSnapshot(){
     g.fillStyle='#16242e';g.font='700 17px "Segoe UI", system-ui, sans-serif';
     g.fillText('📆 SprayCast — spray windows · '+(activeLoc()?activeLoc().name:''),12,24);
     g.fillStyle='#51636f';g.font='600 11.5px "Segoe UI", system-ui, sans-serif';
-    g.fillText('profile: '+p.name+' · generated '+new Date().toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),12,42);
+    g.fillText('profile: '+p.name+(past?' · '+dayShort(days[0])+' – '+dayShort(days[n-1])+' (actual weather)':'')+' · generated '+new Date().toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),12,42);
     var COLS={good:'#b7e0c2',marg:'#f1dfa4',bad:'#f0d3d3',off:'#f4f6f8',offgood:'#e2f0e6',offmarg:'#f3ecd6'};
     g.font='700 11px "Segoe UI", system-ui, sans-serif';g.fillStyle='#16242e';
-    days.forEach(function(day,i){g.fillText(i===0?'Today':dayShort(day),LW+i*cw+4,head+14);});
+    days.forEach(function(day,i){g.fillText((!past&&i===0)?'Today':dayShort(day),LW+i*cw+4,head+14);});
     var top=head+TH;
     for(var h=0;h<24;h++){
       if(h%2===0){g.fillStyle='#7b8a96';g.font='9.5px "Segoe UI", system-ui, sans-serif';g.fillText(scFmtHour(h),4,top+h*rh+10);}
       for(var i2=0;i2<n;i2++){
         var day=days[i2],x=LW+i2*cw,y=top+h*rh;
-        var pa=planAt(day,h,i2);
+        var pa=planAt(day,h,i2,days);
         if(pa){
           var pl=pa.pl;
           g.fillStyle=pl.done?'#93b6cc':(pa.other?'#5f87a3':'#0e5a8a');
@@ -2090,6 +2141,7 @@ function gridSnapshot(){
     /* watch windows as dashed amber outlines, like the live grid */
     g.strokeStyle='#c9a23f';g.setLineDash([4,3]);g.lineWidth=1.5;
     days.forEach(function(day,i3){
+      if(past)return;   /* look-back: watch windows are forward-looking only */
       watches.forEach(function(w){
         if((w.locIds||[]).indexOf(state.activeLoc)<0)return;
         var hit=scWatchMatch(w,watchBase(w),day,days[i3+1],i3===0?nowHourLoc():null);
@@ -2114,7 +2166,7 @@ function gridSnapshot(){
     g.fillStyle='#7b8a96';g.font='10px "Segoe UI", system-ui, sans-serif';
     g.fillText('forecast: Open-Meteo · made with SprayCast',12,H-7);
     c.toBlob(function(b){
-      if(b)_snapShare(b,'SprayCast_week_'+(activeLoc()?activeLoc().name.replace(/[^\w]+/g,'_')+'_':'')+localISO()+'.png');
+      if(b)_snapShare(b,'SprayCast_week_'+(activeLoc()?activeLoc().name.replace(/[^\w]+/g,'_')+'_':'')+(past?days[0].date:localISO())+'.png');
       else toast('Snapshot failed in this browser');
     },'image/png');
   }catch(e){toast('Snapshot failed ('+e.message+')');}
