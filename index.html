@@ -271,9 +271,9 @@ table.bigt col.cdl{width:64px;}
         <button class="sbtn" id="ww-next" onclick="wwNav(1)" title="Forward a week — the forecast runs two weeks out">▶</button>
         <span id="ww-range" class="note"></span></span>
       <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button class="sbtn" onclick="bigWkOpen()" title="Open the week planner FULL SCREEN — on a phone held upright it turns sideways by itself, so the whole week fits big and readable without touching your rotation lock">⛶ Big</button>
+        <button class="sbtn" onclick="bigWkOpen()" title="Open the week planner FULL SCREEN — on a phone held upright it turns sideways by itself, so the whole week fits big and readable without touching your rotation lock">⛶ Full screen</button>
         <button class="sbtn" onclick="hourlyCsv()" title="Download the hour-by-hour conditions forecast as a spreadsheet — temp, wind, gusts, rain, direction, and the good/marginal/blocked rating with reasons, for the whole two-week forecast (opens in Excel)">⬇ Hourly Excel</button>
-        <button class="sbtn" onclick="outlookSend()" title="Write each of this week's days (Good 9h / Tight 2h / No window + the best stretch) as rows on your connected Google Sheet — for coworkers who never open SprayCast. Nothing to do with the Outlook calendar app; calendar files are the 📅 buttons.">📤 Week summary → Google Sheet</button>
+        <button class="sbtn" onclick="outlookSend()" title="Write each of this week's days (Good 9h / Tight 2h / No window + the best stretch) as rows on your connected Google Sheet — for coworkers who never open SprayCast.">📤 Week summary → Google Sheet</button>
         <button class="sbtn" onclick="gridSnapshot()" title="Save the week planner as a picture (PNG) — with the location, profile and legend on it, ready to text the crew">📸 Snapshot</button>
         <span class="popwrap" id="other-wrap" style="display:none;">
           <button class="sbtn" id="other-btn" onclick="otherMenuToggle(event)" title="For crews or sprayers shared between farms — pick which other locations' committed sprays to show on this calendar">👀 Other farms ▾</button>
@@ -286,7 +286,9 @@ table.bigt col.cdl{width:64px;}
     <div class="note" style="margin-top:6px;">🟩 good · 🟨 marginal · <span style="background:#f0d3d3;padding:0 6px;border-radius:3px;">blocked by weather</span> ·
     gray = outside your spray hours · <span style="background:repeating-linear-gradient(45deg,#f4f6f8 0,#f4f6f8 3px,#e2f0e6 3px,#e2f0e6 6px);padding:0 6px;border-radius:3px;">striped = off-hours but conditions would work</span> ·
     <b style="color:var(--acc);">■ committed spray here</b> · <span style="background:repeating-linear-gradient(45deg,#5f87a3 0,#5f87a3 4px,#7fa3bc 4px,#7fa3bc 8px);color:#fff;padding:0 6px;border-radius:3px;font-weight:600;">hatched = another farm's spray</span> (pick which farms under 👀 Other farms) ·
-    <span style="outline:2px dashed var(--marg);outline-offset:-2px;padding:0 6px;border-radius:3px;">⏰ dashed = a watch's window</span> (penciled in, not committed — manage them on the ⏰ Watches tab). Click a spray block for calendar / done / delete; click any open cell for the hour-by-hour detail.</div>
+    <span style="outline:2px dashed var(--marg);outline-offset:-2px;padding:0 6px;border-radius:3px;">⏰ dashed = a watch's window</span> (penciled in, not committed — manage them on the ⏰ Watches tab). Click a spray block for calendar / done / delete; click any open cell for the hour-by-hour detail.
+    <b>◀ pages back</b> through ~13 weeks of the weather that <i>actually happened</i> (your sprays stay on it) · <b>▶ peeks a week ahead</b>.
+    The day cards up top: <b>Good / Tight</b> = how many sprayable hours that day offers under your profile.</div>
     </div>
   </div>
   <div class="panel" id="detail" style="display:none;">
@@ -299,7 +301,8 @@ table.bigt col.cdl{width:64px;}
   <div class="panel" id="empty-hint">
     <h2>Welcome to SprayCast 🌦</h2>
     <div class="sub" style="margin-bottom:0;">Start on the <b>⚙ Setup</b> tab and add your <b>📍 location</b> (type your town — that's the whole setup). Then this
-    Planner shows how many sprayable hours each day offers under your active <b>⚙ profile</b>, the 📌 button up top commits sprays,
+    Planner shows how many sprayable hours each day offers under your active <b>⚙ profile</b> (your own rules for what "sprayable" means),
+    the 📌 button up top commits a spray — puts it on the calendar at a chosen hour —
     and the ⏰ Watches tab alerts you when the right window shows up. Your data stays in this browser — nothing is uploaded anywhere.</div>
   </div>
   </div>
@@ -307,7 +310,7 @@ table.bigt col.cdl{width:64px;}
   <div class="page" id="page-watches" style="display:none;">
     <div class="panel">
       <div class="wwh">⏰ Spray watches <button class="sbtn pri" onclick="watchForm(null)">＋ New watch</button></div>
-      <div class="note" style="margin-bottom:8px;">A watch is a spray you're waiting to make: it checks every forecast day at its location(s) and lights up when a long-enough window appears — penciled onto the Planner grid as a dashed ⏰ outline. One-time watches retire when you commit them; recurring ones keep watching.</div>
+      <div class="note" style="margin-bottom:8px;">A watch is a spray you're waiting to make: it checks every forecast day at its location(s) and lights up when a long-enough window appears — penciled onto the Planner grid as a dashed ⏰ outline. One-time watches are removed once you commit them; recurring ones keep watching.</div>
       <div id="watch-table"></div>
     </div>
   </div>
@@ -328,6 +331,10 @@ table.bigt col.cdl{width:64px;}
   </div>
 
   <div class="page setup" id="page-setup" style="display:none;">
+    <div class="panel" id="setup-hello" style="display:none;background:#eef4f9;">
+      <div style="font-size:13.5px;line-height:1.55;"><b>Welcome — add your town below and you're running.</b><br>
+      Everything stays in this browser; nothing you enter is uploaded anywhere (details under ℹ About, bottom of this page).</div>
+    </div>
     <div class="panel">
       <div class="wwh">📍 Locations</div>
       <label>Find your town</label>
@@ -338,7 +345,7 @@ table.bigt col.cdl{width:64px;}
       <div class="list" id="loc-list"></div>
     </div>
     <div class="panel">
-      <div class="wwh">🔔 Alerts on this computer <button class="sbtn" id="bell-btn" onclick="bellToggle()">🔕 Alerts</button></div>
+      <div class="wwh">🔔 Alerts on this device <button class="sbtn" id="bell-btn" onclick="bellToggle()">🔕 Alerts</button></div>
       <div class="note">When ON, SprayCast chimes and pops a note here whenever a watch finds a NEW window — it works while the page is open.
       For reminders that reach you when SprayCast is closed, commit a spray and use its 📅 button: the calendar file carries its own
       12-hour and 1-hour reminders into Outlook, Gmail or Apple Calendar.</div>
@@ -362,6 +369,7 @@ table.bigt col.cdl{width:64px;}
     <div class="panel">
       <div class="wwh">💾 Backup &amp; sharing</div>
       <div class="note">Your data lives only in this browser. The backup file is also how you <b>share</b> your setup with a coworker — they import it on their computer.</div>
+      <div class="note" style="margin-top:6px;">📱 <b>Phone note:</b> iPhone/Safari can clear a site's saved data if you don't open it for a week or two — export a backup once you're set up, and open the app now and then. Adding it to your Home Screen (share button → Add to Home Screen) also helps protect it and lets it open offline.</div>
       <div class="row" style="margin-top:12px;">
         <button class="btn pri" onclick="backExport()">⬇ Export backup / share file</button>
         <label class="btn" style="margin:0;text-transform:none;letter-spacing:0;font-size:12.5px;">📂 Import a file<input type="file" accept=".json" style="display:none;" onchange="backImport(this)"></label>
@@ -374,9 +382,9 @@ table.bigt col.cdl{width:64px;}
       <div style="font-size:13px;line-height:1.55;color:var(--txt);">
       <p><b>Privacy, plainly:</b> there is no account, no install, and nothing you enter is uploaded anywhere — unless you connect
       the optional 📤 Google-Sheet bridge, in which case committed sprays (and nothing else) are written to the Google Form/Sheet
-      <b>you</b> set up. Your locations, profiles, watches and plans are stored only in this browser on this computer. The internet
-      requests are to <b>Open-Meteo</b> (a free public weather service) for the forecast and town search, — only when you open the
-      🧭 wind map — <b>Esri's</b> public satellite imagery tiles, and — only when connected — your own Google form.</p>
+      <b>you</b> set up. Your locations, profiles, watches and plans are stored only in this browser on this device. The internet
+      requests are: <b>Open-Meteo</b> (a free public weather service) for the forecast and town search; <b>Esri's</b> public
+      satellite imagery tiles, only while the 🧭 wind map is open; and your own Google form, only if you connect it.</p>
       <p style="margin-top:8px;"><b>A forecast is a forecast:</b> SprayCast is planning help, not a decision-maker. The product label always wins,
       and check live conditions before you pull out of the yard.</p>
       <p style="margin-top:8px;color:var(--txt2);">SprayCast is a small taste of the farm-management system built at Overdevest Nurseries —
@@ -386,7 +394,7 @@ table.bigt col.cdl{width:64px;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.13 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.14 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
@@ -970,6 +978,8 @@ function locRename(id){
   locRenderList();renderAll();
 }
 function locRenderList(){
+  var hi=document.getElementById('setup-hello');
+  if(hi)hi.style.display=locs.length?'none':'';
   var box=document.getElementById('loc-list');
   box.innerHTML=(locs.length?locs.map(function(l){
     var on=activeLoc()&&activeLoc().id===l.id;
@@ -1026,7 +1036,9 @@ function profSave(){
     var fRaw=document.getElementById('pf-from-'+d).value||'06:00';
     var tRaw=document.getElementById('pf-to-'+d).value||'20:00';
     var fh=parseInt(fRaw,10)||0,th=parseInt(tRaw,10)||0;
-    if(fRaw.slice(3,5)!=='00'){fh=(fh+1)%24;snapped=true;}
+    /* cap at 23 — wrapping 23:30 → 0:00 would flip an overnight window
+       onto the wrong day entirely (08-11 review) */
+    if(fRaw.slice(3,5)!=='00'){fh=Math.min(fh+1,23);snapped=true;}
     if(tRaw.slice(3,5)!=='00')snapped=true;
     var fV=('0'+fh).slice(-2)+':00',tV=('0'+th).slice(-2)+':00';
     p.week[d]={on:document.getElementById('pf-on-'+d).checked,from:fV,to:tV};
@@ -1274,7 +1286,7 @@ function _shareFile(b,fname,mime){
 function dlText(fname,text,mime){
   /* leading BOM so Excel opens UTF-8 CSVs with accents intact */
   var b=new Blob(['﻿'+text],{type:mime||'text/csv;charset=utf-8'});
-  if(_isPhone()&&_shareFile(b,fname,'text/csv'))return;
+  if(_isPhone()&&_shareFile(b,fname,(mime||'text/csv').split(';')[0]))return;
   _dlBlob(b,fname);
 }
 function sprayCsvPage(){
@@ -1324,12 +1336,12 @@ function outlookSend(){
     var s=scDaySummary(p,day.dow,day.hours,daysCache[i+1]?daysCache[i+1].hours:null,i===0?nowHourLoc():null);
     sheetSend({date:day.date,
       from:s.best?s.best.from:null,to:s.best?(s.best.to%24):null,
-      name:'Outlook: '+s.label,
+      name:'Day summary: '+s.label,
       notes:(s.best?('best stretch '+scFmtRun(s.best)):'no sprayable window')+' · profile '+p.name,
       locId:state.activeLoc},'outlook');
     n++;
   });
-  toast('📤 Outlook sent — '+n+' day rows on their way to the sheet');
+  toast('📤 Week summary sent — '+n+' day rows on their way to the sheet');
 }
 /* ── 📤 Google-Sheet bridge: commits flow into a shared sheet via a Google
    Form the sheet owner sets up once (no account, no API key — the same
@@ -1587,9 +1599,11 @@ function wkTd(p,day,i,h,wOutline,live,view,past){
   var wo=wOutline[i][h];
   var tip=dayShort(day)+' '+scFmtHour(h)+' — '+tips[st]
     +(wo?' · ⏰ watch: '+wo.map(function(x){return x.name;}).join(', '):'');
+  /* i is the VIEW column — on the forward page daysCache is 7 further on */
+  var gi=wwOff>0?wwOff*7+i:i;
   var click=past
-    ?' onclick="renderDetail(_wwView['+i+'],activeProf());document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});"'
-    :' onclick="selDay='+i+';renderDays();renderDetail(daysCache['+i+'],activeProf());document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});"';
+    ?' onclick="renderDetail(_wwView['+i+'],activeProf(),true);document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});"'
+    :' onclick="selDay='+gi+';renderDays();renderDetail(daysCache['+gi+'],activeProf(),true);document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});"';
   return '<td class="c-'+st+(wo?' c-watch':'')+'"'+(live?click:'')+' title="'+esc(tip)+'">'
     +(wo&&wo.some(function(x){return x.first;})?'⏰':'')+'</td>';
 }
@@ -1732,9 +1746,12 @@ function wxSplitDays(d){
   var all=wxDays(d);
   var off=(d&&d.utc_offset_seconds)||0;
   var today=new Date(Date.now()+off*1000).toISOString().slice(0,10);
-  var idx=0;
-  for(var i=0;i<all.length;i++){if(all[i].date===today){idx=i;break;}}
-  return {past:all.slice(0,idx),days:all.slice(idx)};
+  /* split by DATE, not by found-index: a stale offline cache may hold no
+     bucket for the real today — everything before today must land in PAST,
+     never be presented as the forecast (08-11 review) */
+  var past=[],days=[];
+  all.forEach(function(x){(x.date<today?past:days).push(x);});
+  return {past:past,days:days};
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -1766,7 +1783,11 @@ function renderAll(){
     if(!activeLoc()||activeLoc().id!==reqId)return;
     wxCache=d;
     if(!d){document.getElementById('wx-note').textContent='⚠ forecast unavailable — check the internet connection';_pendingCommit=null;return;}
-    document.getElementById('wx-note').textContent='forecast updated '+new Date(at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · refreshes every 30 min';
+    /* a stale offline cache must SAY it's old — the time alone hides it */
+    var atD=new Date(at),atOld=atD.toDateString()!==new Date().toDateString();
+    document.getElementById('wx-note').textContent=atOld
+      ?'⚠ forecast from '+atD.toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' — no connection since then'
+      :'forecast updated '+atD.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' · refreshes every 30 min';
     var sp=wxSplitDays(d);
     daysCache=sp.days;wxPastCache=sp.past;
     wxDaysByLoc={};wxDaysByLoc[reqId]=daysCache;
@@ -1793,7 +1814,7 @@ function renderDays(){
     var mk='';
     if(dayPlans.length)mk+='<span class="pl">📌 '+(dayPlans.length===1?scFmtRun(dayPlans[0]):dayPlans.length+' sprays')+'</span>';
     if(wMatch.length)mk+=(mk?' ':'')+'<span class="wa">⏰ '+wMatch.length+'</span>';
-    return '<button class="day'+(i===selDay?' sel':'')+'" onclick="selDay='+i+';renderDays();renderDetail(daysCache['+i+'],activeProf());document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});">'
+    return '<button class="day'+(i===selDay?' sel':'')+'" onclick="selDay='+i+';renderDays();renderDetail(daysCache['+i+'],activeProf(),true);document.getElementById(\'detail\').scrollIntoView({behavior:\'smooth\'});">'
       +'<span class="dn">'+dn+' '+dm+'</span>'
       +'<span class="ic">'+(day.icon||'🌤')+'</span>'
       +'<span class="tt">'+(day.hi!=null?Math.round(day.hi)+'°':'')+' <span>'+(day.lo!=null?Math.round(day.lo)+'°':'')+'</span></span>'
@@ -1806,11 +1827,13 @@ function renderDays(){
      position (Today is the left edge, so a fresh strip needs no centering) */
   try{if(keep>0&&box.scrollWidth>box.clientWidth+4)box.scrollLeft=keep;}catch(e){}
 }
-function renderDetail(day,p){
+function renderDetail(day,p,fromClick){
   if(!day)return;
   var det=document.getElementById('detail');det.style.display='';
-  /* if the plan sidebar is open, its day dropdown follows the clicked day */
-  if(document.getElementById('plan-drawer').classList.contains('op')){
+  /* if the plan sidebar is open, its day dropdown follows a CLICKED day —
+     never a background refresh, which would silently reset the operator's
+     picked day and hours mid-edit (08-11 review) */
+  if(fromClick&&document.getElementById('plan-drawer').classList.contains('op')){
     var pd=document.getElementById('plf-day');
     if(pd&&pd.options.length>selDay){pd.value=String(selDay);planDayChanged();}
   }
@@ -1866,7 +1889,7 @@ function mapRecenter(){
 }
 function mapUsePoint(){
   var l=activeLoc();if(!l||!_mapC)return;
-  if(!confirm('Use the current map center as the forecast point for "'+l.name+'"?\nThe 7-day outlook re-fetches for this exact spot.'))return;
+  if(!confirm('Use the current map center as the forecast point for "'+l.name+'"?\nThe forecast re-fetches for this exact spot.'))return;
   l.lat=_mapC.lat;l.lon=_mapC.lon;
   mapSaveView();
   try{localStorage.removeItem('spraycast_wx_'+l.id);}catch(e){}
@@ -2173,7 +2196,11 @@ function gridSnapshot(){
       if(past)return;   /* look-back: watch windows are forward-looking only */
       watches.forEach(function(w){
         if((w.locIds||[]).indexOf(state.activeLoc)<0)return;
-        var hit=scWatchMatch(w,watchBase(w),day,days[i3+1],(wwOff===0&&i3===0)?nowHourLoc():null);
+        /* the view's last column still has a real next day in daysCache —
+           without it an overnight run truncates at midnight and the ⏰
+           outline vanishes from the PNG (08-11 review) */
+        var gnext=days[i3+1]||daysCache[daysCache.indexOf(day)+1]||null;
+        var hit=scWatchMatch(w,watchBase(w),day,gnext,(wwOff===0&&i3===0)?nowHourLoc():null);
         if(!hit)return;
         var to1=Math.min(hit.run.to,24);
         g.strokeRect(LW+i3*cw+1,top+hit.run.from*rh+1,cw-4,(to1-hit.run.from)*rh-2);
@@ -2408,7 +2435,7 @@ function backRender(){
   var meta=scLoad(SC_KEYS.meta,{});
   document.getElementById('back-note').textContent=meta.lastBackup
     ? 'Last backup: '+new Date(meta.lastBackup).toLocaleDateString()
-    : 'No backup taken yet on this computer.';
+    : 'No backup taken yet on this device.';
 }
 
 /* ── collapsible panels (week planner / hour-by-hour) ── */
