@@ -127,6 +127,17 @@ tr.h-off td{color:#9aa6ae;}
 /* another location's spray (shared-equipment view) — hatched steel blue */
 .wk td.c-plan.oloc{background:repeating-linear-gradient(45deg,#5f87a3 0,#5f87a3 4px,#7fa3bc 4px,#7fa3bc 8px);font-weight:600;}
 .wk td.c-plan.oloc.done{background:repeating-linear-gradient(45deg,#9fb4c2 0,#9fb4c2 4px,#b3c5d1 4px,#b3c5d1 8px);}
+/* ⛶ big week view — the same cells TRANSPOSED (days down, hours across) so a
+   whole week fits a landscape screen; the block is scaled to fill, so the px
+   here only set the proportions */
+table.bigt{width:712px;table-layout:fixed;}
+table.bigt th{text-align:left;padding:2px 0;font-size:9px;letter-spacing:0;}
+table.bigt td{height:46px;font-size:15px;padding:0 2px;cursor:default;}
+table.bigt td.dlbl{background:none;border:none;text-align:right;color:var(--txt2);padding-right:7px;font-size:12px;font-weight:700;white-space:nowrap;}
+table.bigt td.dlbl.today{color:var(--acc);}
+table.bigt col.cdl{width:64px;}
+#bigwk-inner .bwh{font-weight:800;font-size:14px;margin:0 0 6px;color:var(--txt);}
+#bigwk-inner .bwn{font-size:10.5px;color:var(--txt2);margin-top:6px;}
 /* wind map (Phase 3) — DIY Esri tile grid, no map library */
 #map-box{position:relative;width:100%;height:500px;overflow:hidden;border-radius:10px;background:#0b2233;touch-action:none;cursor:grab;}
 #map-ticks{position:relative;height:18px;font-size:9px;color:var(--txt2);}
@@ -251,6 +262,7 @@ tr.h-off td{color:#9aa6ae;}
   <div class="panel" id="ww-panel" style="display:none;">
     <div class="wwh"><span style="display:flex;align-items:center;gap:6px;"><button class="caret" id="ww-caret" onclick="collToggle('ww')" title="Collapse / expand the week planner">▾</button>📆 Week planner</span>
       <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="sbtn" onclick="bigWkOpen()" title="Open the week planner FULL SCREEN — on a phone held upright it turns sideways by itself, so the whole week fits big and readable without touching your rotation lock">⛶ Big</button>
         <button class="sbtn" onclick="hourlyCsv()" title="Download the hour-by-hour conditions forecast as a spreadsheet — temp, wind, gusts, rain, direction, and the good/marginal/blocked rating with reasons, for the whole week (opens in Excel)">⬇ Hourly Excel</button>
         <button class="sbtn" onclick="outlookSend()" title="Write this week's day-by-day outlook (Good 9h / Tight 2h / No window + the best stretch) to your connected Google Sheet — for people who never open SprayCast">📤 Outlook → sheet</button>
         <button class="sbtn" onclick="gridSnapshot()" title="Save the week planner as a picture (PNG) — with the location, profile and legend on it, ready to text the crew">📸 Snapshot</button>
@@ -365,7 +377,7 @@ tr.h-off td{color:#9aa6ae;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.7 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.9 · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
@@ -493,6 +505,12 @@ built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
   </div>
 </div>
 
+<!-- ── ⛶ full-screen week view (auto-landscape on portrait phones) ────── -->
+<div id="bigwk" style="display:none;position:fixed;inset:0;background:rgba(12,22,30,.96);z-index:3000;">
+  <div id="bigwk-inner"></div>
+  <button onclick="bigWkClose()" style="position:fixed;top:10px;right:10px;z-index:3001;font:inherit;font-size:15px;font-weight:800;padding:9px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.45);color:#fff;cursor:pointer;">✕</button>
+</div>
+
 <div class="banner" id="save-banner">⚠ SAVE FAILED — your browser storage may be full or blocked. Export a backup NOW.</div>
 <div class="toast" id="toast"></div>
 
@@ -519,12 +537,22 @@ function scDefaultProfile(){
 }
 function scHourInWindow(profile,dow,hour){
   var w=profile.week&&profile.week[dow];
-  if(!w||!w.on)return false;
-  var f=parseInt(w.from,10),t=parseInt(w.to,10);
-  if(isNaN(f)||isNaN(t))return false;
-  if(f===t)return false;
-  if(f<t)return hour>=f&&hour<t;         /* normal window, e.g. 6→20 */
-  return hour>=f||hour<t;                /* overnight window, e.g. 20→04 */
+  if(w&&w.on){
+    var f=parseInt(w.from,10),t=parseInt(w.to,10);
+    if(!isNaN(f)&&!isNaN(t)&&f!==t){
+      if(f<t){if(hour>=f&&hour<t)return true;}   /* normal window, e.g. 6→20 */
+      else if(hour>=f)return true;               /* overnight: the evening half */
+    }
+  }
+  /* the MORNING tail of an overnight window belongs to the PREVIOUS day's
+     setting: "Monday 20→04" means Mon 8 PM through TUE 4 AM — so Tuesday's
+     0–4 AM hours are in-window only when Monday wraps (08-11 review) */
+  var pv=profile.week&&profile.week[(dow+6)%7];
+  if(pv&&pv.on){
+    var pf=parseInt(pv.from,10),pt=parseInt(pv.to,10);
+    if(!isNaN(pf)&&!isNaN(pt)&&pf>pt&&hour<pt)return true;
+  }
+  return false;
 }
 function scDir8(deg){var pts=['N','NE','E','SE','S','SW','W','NW'];return pts[Math.round((((deg%360)+360)%360)/45)%8];}
 function scRateHour(p,h){
@@ -543,11 +571,16 @@ function scRateHour(p,h){
   if(h.rain!=null&&h.rain>p.rainGood)why.push('some rain risk ('+Math.round(h.rain)+'%)');
   return why.length?{st:'marg',why:why}:{st:'good',why:[]};
 }
-function scDaySummary(p,dow,hours){
+function scDaySummary(p,dow,hours,nextHours,fromHour){
   /* hours: array of {t,hour,temp,rain,wind,gust} for ONE local day.
+     nextHours (optional): the FOLLOWING day's hours — lets an overnight
+     window's run continue past midnight (run.to may exceed 24).
+     fromHour (optional): ignore hours before it — pass the location-local
+     current hour for TODAY so past windows are never counted/offered.
      returns {goodH, margH, chip:'good'|'marg'|'none', label, best} */
   var good=0,marg=0,run=[],best=null,cur=null;
   hours.forEach(function(h){
+    if(fromHour!=null&&h.hour<fromHour)return;   /* already gone today */
     var inW=scHourInWindow(p,dow,h.hour);
     var r=inW?scRateHour(p,h):null;
     var ok=r&&(r.st==='good'||r.st==='marg');
@@ -557,6 +590,23 @@ function scDaySummary(p,dow,hours){
       if(r.st==='good')cur.goods++; }
     else if(cur){ run.push(cur); cur=null; }
   });
+  /* a run still open at midnight continues into the next day when this
+     day's window wraps (e.g. 20→04): extend over nextHours 0..to-1 so an
+     8-hour night shows as ONE 8-hour stretch, not two halves (08-11) */
+  if(cur&&cur.to===24&&nextHours&&nextHours.length){
+    var w=p.week&&p.week[dow];
+    var f=w?parseInt(w.from,10):NaN,t=w?parseInt(w.to,10):NaN;
+    if(w&&w.on&&!isNaN(f)&&!isNaN(t)&&f>t){
+      for(var q=0;q<nextHours.length;q++){
+        var nh=nextHours[q];
+        if(nh.hour!==q||nh.hour>=t)break;        /* contiguous morning hours only */
+        var r2=scRateHour(p,nh);
+        if(r2.st!=='good'&&r2.st!=='marg')break;
+        cur.to=24+nh.hour+1;
+        if(r2.st==='good')cur.goods++;
+      }
+    }
+  }
   if(cur)run.push(cur);
   run.forEach(function(r){ if(!best||(r.to-r.from)>(best.to-best.from)||((r.to-r.from)===(best.to-best.from)&&r.goods>best.goods))best=r; });
   var total=good+marg,chip,label;
@@ -575,20 +625,23 @@ function scWatchProfile(w,base){
   if(w.dirs&&w.dirs.length)p.dirs=w.dirs.slice();
   return p;
 }
-function scWatchMatch(w,base,day){
-  var s=scDaySummary(scWatchProfile(w,base),day.dow,day.hours);
+function scWatchMatch(w,base,day,nextDay,fromHour){
+  var s=scDaySummary(scWatchProfile(w,base),day.dow,day.hours,nextDay?nextDay.hours:null,fromHour);
   var need=Math.max(1,parseInt(w.minHours,10)||1);
   return (s.best&&(s.best.to-s.best.from)>=need)?{run:s.best,summary:s}:null;
 }
 /* a watch can cover several locations — earliest match wins.
-   locDays: [{locId, days:[...]}]. Pure + tested. */
-function scWatchNextAcross(w,base,locDays){
+   locDays: [{locId, days:[...]}]. todayDate/nowHour (optional): the
+   location-local today + current hour — hours already gone never match.
+   Pure + tested. */
+function scWatchNextAcross(w,base,locDays,todayDate,nowHour){
   var best=null;
   locDays.forEach(function(ld){
     for(var i=0;i<(ld.days||[]).length;i++){
-      var m=scWatchMatch(w,base,ld.days[i]);
+      var di=ld.days[i];
+      var m=scWatchMatch(w,base,di,ld.days[i+1],(todayDate&&di.date===todayDate)?nowHour:null);
       if(m){
-        if(!best||ld.days[i].date<best.day.date)best={day:ld.days[i],run:m.run,locId:ld.locId,idx:i};
+        if(!best||di.date<best.day.date)best={day:di,run:m.run,locId:ld.locId,idx:i};
         break;
       }
     }
@@ -954,13 +1007,28 @@ function profSave(){
   if(p.windMax<p.windGood)p.windMax=p.windGood;   /* keep sane */
   if(p.rainMax<p.rainGood)p.rainMax=p.rainGood;
   p.dirs=dirRead('pfd-');
-  for(var d=0;d<7;d++){p.week[d]={on:document.getElementById('pf-on-'+d).checked,
-    from:document.getElementById('pf-from-'+d).value||'06:00',to:document.getElementById('pf-to-'+d).value||'20:00'};}
+  /* the engine plans by WHOLE hours — snap typed minutes conservatively
+     (start rounds UP, end rounds DOWN) so no half-hour the operator
+     excluded is ever offered; write the snapped time back so the form
+     shows what's actually in force (08-11 review) */
+  var snapped=false;
+  for(var d=0;d<7;d++){
+    var fRaw=document.getElementById('pf-from-'+d).value||'06:00';
+    var tRaw=document.getElementById('pf-to-'+d).value||'20:00';
+    var fh=parseInt(fRaw,10)||0,th=parseInt(tRaw,10)||0;
+    if(fRaw.slice(3,5)!=='00'){fh=(fh+1)%24;snapped=true;}
+    if(tRaw.slice(3,5)!=='00')snapped=true;
+    var fV=('0'+fh).slice(-2)+':00',tV=('0'+th).slice(-2)+':00';
+    p.week[d]={on:document.getElementById('pf-on-'+d).checked,from:fV,to:tV};
+    document.getElementById('pf-from-'+d).value=fV;
+    document.getElementById('pf-to-'+d).value=tV;
+  }
   if(!_pfEditing)profs.push(p);
   scSave(SC_KEYS.profs,profs);
   state.activeProfile=p.id;scSave(SC_KEYS.state,state);
   document.getElementById('prof-form').style.display='none';
-  profRenderList();renderAll();toast('Profile saved');
+  profRenderList();renderAll();
+  toast(snapped?'Profile saved — spray hours snapped to whole hours (starts round up, ends round down)':'Profile saved');
 }
 function profDelete(){
   if(!_pfEditing||profs.length<2)return;
@@ -977,13 +1045,24 @@ function profDelete(){
    ════════════════════════════════════════════════════════════════════════ */
 var _wfEditing=null,_planPrefill=null;
 function localISO(d){d=d||new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+/* "today" AT THE LOCATION — the forecast's first day (Open-Meteo runs
+   location-local). The browser's calendar date is a different day whenever
+   the farm sits in another timezone; only use localISO() for filenames. */
+function todayLoc(){return daysCache.length?daysCache[0].date:localISO();}
+/* the location-local current hour, from the forecast reply's utc offset —
+   never the browser clock */
+function nowHourLoc(){
+  if(wxCache&&wxCache.utc_offset_seconds!=null)
+    return new Date(Date.now()+wxCache.utc_offset_seconds*1000).getUTCHours();
+  return new Date().getHours();
+}
 function watchBase(w){return profs.find(function(p){return p.id===w.profileId;})||activeProf();}
 function watchNext(w){
   var ids=(w.locIds&&w.locIds.length)?w.locIds:[state.activeLoc];
-  return scWatchNextAcross(w,watchBase(w),ids.map(function(id){return{locId:id,days:wxDaysByLoc[id]||[]};}));
+  return scWatchNextAcross(w,watchBase(w),ids.map(function(id){return{locId:id,days:wxDaysByLoc[id]||[]};}),todayLoc(),nowHourLoc());
 }
 function prefetchWatchLocs(){
-  var need={},today=localISO();
+  var need={},today=todayLoc();
   watches.forEach(function(w){(w.locIds||[]).forEach(function(id){if(!wxDaysByLoc[id])need[id]=1;});});
   /* plan locations too — the drift alert needs each committed spray's own
      forecast, not just the active location's */
@@ -1051,7 +1130,9 @@ function planFromWatch(wid){
     if(idx<0){toast('That window is outside the loaded forecast');return;}
     scNav('planner');
     selDay=idx;
-    _planPrefill={name:w.name,from:n.run.from,to:Math.min(n.run.from+Math.max(1,w.minHours||1),n.run.to),watchId:w.id};
+    /* run.to may pass midnight (>24) — an overnight prefill becomes an
+       overnight PLAN: to stored 0–23, earlier than from (e.g. 20→2) */
+    _planPrefill={name:w.name,from:n.run.from%24,to:Math.min(n.run.from+Math.max(1,w.minHours||1),n.run.to)%24,watchId:w.id};
     renderDays();renderDetail(daysCache[selDay],activeProf());
     planFormOpen();
     document.getElementById('detail').scrollIntoView({behavior:'smooth'});
@@ -1073,7 +1154,8 @@ function _pdWhen(){
 }
 function _planTimes(day,pre){
   var opts=function(sel){var s='';for(var h=0;h<24;h++)s+='<option value="'+h+'"'+(h===sel?' selected':'')+'>'+scFmtHour(h)+'</option>';return s;};
-  var s=scDaySummary(activeProf(),day.dow,day.hours);
+  var di=daysCache.indexOf(day);
+  var s=scDaySummary(activeProf(),day.dow,day.hours,(di>=0&&daysCache[di+1])?daysCache[di+1].hours:null,di===0?nowHourLoc():null);
   document.getElementById('plf-from').innerHTML=opts(pre&&pre.from!=null?pre.from:(s.best?s.best.from:8));
   document.getElementById('plf-to').innerHTML=opts(pre&&pre.to!=null?(pre.to%24):(s.best?(s.best.to%24):10));
 }
@@ -1170,7 +1252,7 @@ function sprayCsvPage(){
     .sort(function(a,b){return a.date===b.date?a.from-b.from:(a.date<b.date?-1:1);});
   if(!rows.length){toast('Nothing committed yet — nothing to export');return;}
   var out=[['Date','Day','Start','End','Spray','Location','Notes','Status','Committed on','Sent to sheet']];
-  var today=localISO();
+  var today=todayLoc();
   rows.forEach(function(pl){
     out.push([pl.date,new Date(pl.date+'T12:00:00').toLocaleDateString([],{weekday:'short'}),
       scFmtHour(pl.from),scFmtHour(pl.to),pl.name,locName(pl.locId),pl.notes||'',
@@ -1205,8 +1287,8 @@ function outlookSend(){
   if(!sheetCfg()){toast('Connect the Google Sheet first (⚙ Setup → 📤)');scNav('setup');return;}
   if(!daysCache.length){toast('Add a 📍 location first');return;}
   var p=activeProf(),n=0;
-  daysCache.forEach(function(day){
-    var s=scDaySummary(p,day.dow,day.hours);
+  daysCache.forEach(function(day,i){
+    var s=scDaySummary(p,day.dow,day.hours,daysCache[i+1]?daysCache[i+1].hours:null,i===0?nowHourLoc():null);
     sheetSend({date:day.date,
       from:s.best?s.best.from:null,to:s.best?(s.best.to%24):null,
       name:'Outlook: '+s.label,
@@ -1311,7 +1393,7 @@ function renderSpraysPage(){
   var rows=plans.filter(function(p){return !f||p.locId===f;})
     .sort(function(a,b){return a.date===b.date?a.from-b.from:(a.date<b.date?-1:1);});
   if(!rows.length){box.innerHTML='<div class="li" style="border:none;color:var(--txt2);">Nothing committed yet — use 📌 Plan a spray up top, or Commit a matched watch.</div>';return;}
-  var today=localISO();
+  var today=todayLoc();
   box.innerHTML=rows.map(function(pl){
     var past=pl.date<today;
     var dr=(!past&&!pl.done)?planDrift(pl):null;
@@ -1327,7 +1409,7 @@ function renderSpraysPage(){
 }
 function icsAllPage(){
   var f=_sprayFilterLoc();
-  var up=plans.filter(function(p){return !p.done&&p.date>=localISO()&&(!f||p.locId===f);});
+  var up=plans.filter(function(p){return !p.done&&p.date>=todayLoc()&&(!f||p.locId===f);});
   if(!up.length){toast('No upcoming planned sprays to export');return;}
   icsDownload(up.map(scPlanEvent),'SprayCast_plan.ics');
   toast('Calendar file downloaded ('+up.length+' spray'+(up.length===1?'':'s')+') — open it and save the events');
@@ -1409,60 +1491,119 @@ function renderOtherMenu(){
       return '<label onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleOtherLoc(\''+o.id+'\',this.checked)"'+(sel.indexOf(o.id)>=0?' checked':'')+'> '+esc(o.name)+'</label>';
     }).join('');
 }
+/* watch windows penciled in per day: hour → [{name,first}] — an overnight
+   run (to>24) spills its morning hours into the NEXT day's column */
+function wkOutlines(){
+  var maps=daysCache.map(function(){return {};});
+  daysCache.forEach(function(day,i){
+    watches.forEach(function(w){
+      if((w.locIds||[]).indexOf(state.activeLoc)<0)return;
+      var hit=scWatchMatch(w,watchBase(w),day,daysCache[i+1],i===0?nowHourLoc():null);
+      if(!hit)return;
+      for(var hh=hit.run.from;hh<hit.run.to;hh++){
+        var di=hh<24?i:i+1;
+        if(di>=maps.length)break;
+        (maps[di][hh%24]=maps[di][hh%24]||[]).push({name:w.name,first:hh===hit.run.from});
+      }
+    });
+  });
+  return maps;
+}
+/* one week-grid cell — shared by the live grid and the ⛶ big view (which is
+   view-only: no onclick, plan labels shrink to just the pin) */
+function wkTd(p,day,i,h,wOutline,live){
+  var pa=planAt(day,h,i);
+  if(pa){
+    var pl=pa.pl;
+    var first=(pl.date===day.date&&h===pl.from);
+    var dr=(!pl.done&&!pa.other)?planDrift(pl):null;
+    var drifted=dr&&dr.bad>0;
+    var full='📌 '+esc(pl.name)+(pa.other?' @'+esc(locName(pl.locId)):'');
+    var lbl=first?((drifted?'⚠ ':'')+(live?full:'📌')):'';
+    return '<td class="c-plan'+(pa.other?' oloc':'')+(pl.done?' done':'')+'"'+(drifted?' style="outline:2px dashed var(--bad);outline-offset:-2px;"':'')+(live?' onclick="planAct(\''+pl.id+'\')"':'')+' title="'+esc(pl.name)+' · '+scFmtRun(pl)+' · '+esc(locName(pl.locId))+(pl.done?' · done':'')+(drifted?' · ⚠ FORECAST SHIFTED: '+esc(dr.why.join(', ')):'')+'">'+lbl+'</td>';
+  }
+  var inW=scHourInWindow(p,day.dow,h);
+  var hr=null;
+  for(var k=0;k<day.hours.length;k++){if(day.hours[k].hour===h){hr=day.hours[k];break;}}
+  var r=hr?scRateHour(p,hr):{st:'bad',why:['no data']};
+  var st=scCellState(inW,r.st);
+  var tips={good:r.why.length?'good — '+r.why.join(', '):'good',
+    marg:'marginal: '+r.why.join(', '),
+    bad:'blocked: '+r.why.join(', '),
+    off:'outside your spray hours',
+    offgood:'outside your spray hours — but conditions are GOOD if you need the time',
+    offmarg:'outside your spray hours — conditions are workable but marginal ('+r.why.join(', ')+')'};
+  var wo=wOutline[i][h];
+  var tip=dayShort(day)+' '+scFmtHour(h)+' — '+tips[st]
+    +(wo?' · ⏰ watch: '+wo.map(function(x){return x.name;}).join(', '):'');
+  return '<td class="c-'+st+(wo?' c-watch':'')+'"'+(live?' onclick="selDay='+i+';renderDays();renderDetail(daysCache['+i+'],activeProf());"':'')+' title="'+esc(tip)+'">'
+    +(wo&&wo.some(function(x){return x.first;})?'⏰':'')+'</td>';
+}
 function renderWkGrid(){
   var p=activeProf(),el=document.getElementById('wkgrid');
   if(!daysCache.length){el.innerHTML='';return;}
   var head='<tr><th></th>'+daysCache.map(function(day,i){
     return '<th'+(i===0?' class="today"':'')+'>'+(i===0?'Today':dayShort(day))+'</th>';
   }).join('')+'</tr>';
-  /* watch windows penciled in per day: hour → [{name,first}] */
-  var wOutline=daysCache.map(function(day){
-    var m={};
-    watches.forEach(function(w){
-      if((w.locIds||[]).indexOf(state.activeLoc)<0)return;
-      var hit=scWatchMatch(w,watchBase(w),day);
-      if(!hit)return;
-      for(var hh=hit.run.from;hh<hit.run.to;hh++){
-        (m[hh]=m[hh]||[]).push({name:w.name,first:hh===hit.run.from});
-      }
-    });
-    return m;
-  });
+  var wOutline=wkOutlines();
   var rows='';
   for(var h=0;h<24;h++){
     rows+='<tr><td class="hlbl">'+(h%2===0?scFmtHour(h):'')+'</td>';
     /* eslint-disable no-loop-func */
-    daysCache.forEach(function(day,i){
-      var pa=planAt(day,h,i);
-      if(pa){
-        var pl=pa.pl;
-        var first=(pl.date===day.date&&h===pl.from);
-        var dr=(!pl.done&&!pa.other)?planDrift(pl):null;
-        var drifted=dr&&dr.bad>0;
-        var lbl=first?((drifted?'⚠ ':'')+'📌 '+esc(pl.name)+(pa.other?' @'+esc(locName(pl.locId)):'')):'';
-        rows+='<td class="c-plan'+(pa.other?' oloc':'')+(pl.done?' done':'')+'"'+(drifted?' style="outline:2px dashed var(--bad);outline-offset:-2px;"':'')+' onclick="planAct(\''+pl.id+'\')" title="'+esc(pl.name)+' · '+scFmtRun(pl)+' · '+esc(locName(pl.locId))+(pl.done?' · done':'')+(drifted?' · ⚠ FORECAST SHIFTED: '+esc(dr.why.join(', ')):'')+'">'+lbl+'</td>';
-        return;
-      }
-      var inW=scHourInWindow(p,day.dow,h);
-      var hr=null;
-      for(var k=0;k<day.hours.length;k++){if(day.hours[k].hour===h){hr=day.hours[k];break;}}
-      var r=hr?scRateHour(p,hr):{st:'bad',why:['no data']};
-      var st=scCellState(inW,r.st);
-      var tips={good:r.why.length?'good — '+r.why.join(', '):'good',
-        marg:'marginal: '+r.why.join(', '),
-        bad:'blocked: '+r.why.join(', '),
-        off:'outside your spray hours',
-        offgood:'outside your spray hours — but conditions are GOOD if you need the time',
-        offmarg:'outside your spray hours — conditions are workable but marginal ('+r.why.join(', ')+')'};
-      var wo=wOutline[i][h];
-      var tip=dayShort(day)+' '+scFmtHour(h)+' — '+tips[st]
-        +(wo?' · ⏰ watch: '+wo.map(function(x){return x.name;}).join(', '):'');
-      rows+='<td class="c-'+st+(wo?' c-watch':'')+'" onclick="selDay='+i+';renderDays();renderDetail(daysCache['+i+'],activeProf());" title="'+esc(tip)+'">'
-        +(wo&&wo.some(function(x){return x.first;})?'⏰':'')+'</td>';
-    });
+    daysCache.forEach(function(day,i){rows+=wkTd(p,day,i,h,wOutline,true);});
     rows+='</tr>';
   }
   el.innerHTML='<div style="overflow-x:auto;"><table class="wk"><colgroup><col class="chl">'+daysCache.map(function(){return '<col>';}).join('')+'</colgroup>'+head+rows+'</table></div>';
+}
+/* ── ⛶ full-screen week view: the SAME cells transposed (days down, hours
+   across) so the whole week fits a landscape screen. On a phone held upright
+   the block is CSS-rotated 90° — a big readable planner without touching the
+   rotation lock; a truly-landscape viewport shows it straight. View-only. ── */
+function bigWkOpen(){
+  if(!daysCache.length){toast('No forecast yet — add a 📍 location first');return;}
+  document.getElementById('bigwk').style.display='block';
+  bigWkRender();
+  try{window.addEventListener('resize',bigWkRender);}catch(e){}
+}
+function bigWkClose(){
+  document.getElementById('bigwk').style.display='none';
+  try{window.removeEventListener('resize',bigWkRender);}catch(e){}
+}
+function bigWkRender(){
+  var box=document.getElementById('bigwk');
+  if(!box||box.style.display==='none')return;
+  var p=activeProf(),l=activeLoc();if(!p||!l)return;
+  var vw=(typeof window!=='undefined'&&window.innerWidth)||800;
+  var vh=(typeof window!=='undefined'&&window.innerHeight)||600;
+  var portrait=vh>vw;
+  var W=portrait?vh:vw,H=portrait?vw:vh;      /* the landscape canvas */
+  var wOutline=wkOutlines();
+  var head='<tr><th></th>';
+  for(var h=0;h<24;h++)head+='<th>'+(h%2===0?scFmtHour(h).replace(' AM','a').replace(' PM','p'):'')+'</th>';
+  head+='</tr>';
+  var rows=daysCache.map(function(day,i){
+    var r='<tr><td class="dlbl'+(i===0?' today':'')+'">'+(i===0?'Today':dayShort(day))+'</td>';
+    for(var hh=0;hh<24;hh++)r+=wkTd(p,day,i,hh,wOutline,false);
+    return r+'</tr>';
+  }).join('');
+  var inner=document.getElementById('bigwk-inner');
+  inner.innerHTML='<div id="bigwk-tbl" style="position:absolute;transform-origin:top left;">'
+    +'<div class="bwh">📆 '+esc(l.name)+' · '+esc(p.name)+'</div>'
+    +'<table class="wk bigt"><colgroup><col class="cdl"></colgroup>'+head+rows+'</table>'
+    +'<div class="bwn">🟩 good · 🟨 marginal · 🟥 blocked by weather · gray = outside spray hours (striped = would work) · ■ committed spray · dashed ⏰ = watch window</div>'
+    +'</div>';
+  var base='position:absolute;background:#fff;overflow:hidden;';
+  if(portrait){
+    inner.style.cssText=base+'left:0;top:0;width:'+vh+'px;height:'+vw+'px;transform-origin:top left;transform:rotate(90deg) translateY(-100%);';
+  } else {
+    inner.style.cssText=base+'inset:0;width:'+vw+'px;height:'+vh+'px;';
+  }
+  var t=document.getElementById('bigwk-tbl');
+  var natW=t.offsetWidth||712,natH=t.offsetHeight||480;
+  var s=Math.min((W-24)/natW,(H-24)/natH);
+  t.style.transform='scale('+s+')';
+  t.style.left=Math.max(12,(W-natW*s)/2)+'px';
+  t.style.top=Math.max(12,(H-natH*s)/2)+'px';
 }
 /* plan action modal */
 var _actPlan=null;
@@ -1536,16 +1677,21 @@ function renderAll(){
   document.getElementById('detail').style.display='none';
   if(!l){document.getElementById('wx-note').textContent='';daysCache=[];renderWW();return;}
   document.getElementById('wx-note').textContent='fetching forecast…';
+  var reqId=l.id;
   wxFetch(function(d,at){
+    /* stale-reply guard: a slow fetch for the PREVIOUS location must never
+       repaint the one now active — the grid would show farm A's weather
+       under farm B's name (08-11 review) */
+    if(!activeLoc()||activeLoc().id!==reqId)return;
     wxCache=d;
     if(!d){document.getElementById('wx-note').textContent='⚠ forecast unavailable — check the internet connection';_pendingCommit=null;return;}
     document.getElementById('wx-note').textContent='forecast updated '+new Date(at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · refreshes every 30 min';
     daysCache=wxDays(d);
-    wxDaysByLoc={};wxDaysByLoc[l.id]=daysCache;
+    wxDaysByLoc={};wxDaysByLoc[reqId]=daysCache;
     if(selDay==null||selDay>=daysCache.length)selDay=0;
     renderDays();
     renderWW();
-    renderDetail(daysCache[selDay],p);
+    renderDetail(daysCache[selDay],activeProf());   /* re-read: p may be stale too */
     alertCheck();
     prefetchWatchLocs();
     if(_pendingCommit){var f=_pendingCommit;_pendingCommit=null;f();}
@@ -1554,11 +1700,12 @@ function renderAll(){
 function renderDays(){
   var p=activeProf();
   document.getElementById('days').innerHTML=daysCache.map(function(day,i){
-    var s=scDaySummary(p,day.dow,day.hours);
+    var fromH=i===0?nowHourLoc():null;   /* today: hours already gone don't count */
+    var s=scDaySummary(p,day.dow,day.hours,daysCache[i+1]?daysCache[i+1].hours:null,fromH);
     var dn=i===0?'Today':new Date(day.date+'T12:00:00').toLocaleDateString([], {weekday:'short'});
     var dm=new Date(day.date+'T12:00:00').toLocaleDateString([], {month:'numeric',day:'numeric'});
     var dayPlans=plans.filter(function(x){return x.date===day.date&&!x.done&&(!x.locId||x.locId===state.activeLoc);});
-    var wMatch=watches.filter(function(w){return (w.locIds||[]).indexOf(state.activeLoc)>=0&&scWatchMatch(w,watchBase(w),day);});
+    var wMatch=watches.filter(function(w){return (w.locIds||[]).indexOf(state.activeLoc)>=0&&scWatchMatch(w,watchBase(w),day,daysCache[i+1],fromH);});
     var mk='';
     if(dayPlans.length)mk+='<span class="pl">📌 '+(dayPlans.length===1?scFmtRun(dayPlans[0]):dayPlans.length+' sprays')+'</span>';
     if(wMatch.length)mk+=(mk?' ':'')+'<span class="wa">⏰ '+wMatch.length+'</span>';
@@ -1580,7 +1727,8 @@ function renderDetail(day,p){
     var pd=document.getElementById('plf-day');
     if(pd&&pd.options.length>selDay){pd.value=String(selDay);planDayChanged();}
   }
-  var s=scDaySummary(p,day.dow,day.hours);
+  var di=daysCache.indexOf(day);
+  var s=scDaySummary(p,day.dow,day.hours,(di>=0&&daysCache[di+1])?daysCache[di+1].hours:null,di===0?nowHourLoc():null);
   document.getElementById('d-title').textContent=new Date(day.date+'T12:00:00').toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
   document.getElementById('d-sub').innerHTML=s.chip==='none'
     ? 'No sprayable window under <b>'+esc(p.name)+'</b>'
@@ -1641,19 +1789,40 @@ function mapUsePoint(){
 function mapBind(){
   if(_mapBound)return;_mapBound=true;
   var box=document.getElementById('map-box');
+  /* one finger (or the mouse) pans; a second finger turns the gesture into a
+     pinch-zoom (zoom steps on doubling/halving of the finger distance) */
+  var ptrs={},pinch=null;
+  function pDist(){var ids=Object.keys(ptrs);var a=ptrs[ids[0]],b=ptrs[ids[1]];
+    return Math.sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y))||1;}
   box.addEventListener('pointerdown',function(e){
     if(e.target.tagName==='BUTTON')return;
-    _mapDrag={sx:e.clientX,sy:e.clientY,dx:0,dy:0};
+    ptrs[e.pointerId]={x:e.clientX,y:e.clientY};
     try{box.setPointerCapture(e.pointerId);}catch(err){}
+    if(Object.keys(ptrs).length===2){
+      _mapDrag=null;
+      document.getElementById('map-tiles').style.transform='';
+      document.getElementById('map-ov').style.transform='';
+      pinch={d0:pDist(),z0:_mapZ};
+      return;
+    }
+    _mapDrag={sx:e.clientX,sy:e.clientY,dx:0,dy:0};
     box.style.cursor='grabbing';
   });
   box.addEventListener('pointermove',function(e){
+    if(ptrs[e.pointerId])ptrs[e.pointerId]={x:e.clientX,y:e.clientY};
+    if(pinch&&Object.keys(ptrs).length===2){
+      var z=Math.max(9,Math.min(17,pinch.z0+Math.round(Math.log(pDist()/pinch.d0)/Math.LN2)));
+      if(z!==_mapZ){_mapZ=z;mapSaveView();mapRender();}
+      return;
+    }
     if(!_mapDrag)return;
     _mapDrag.dx=e.clientX-_mapDrag.sx;_mapDrag.dy=e.clientY-_mapDrag.sy;
     document.getElementById('map-tiles').style.transform='translate('+_mapDrag.dx+'px,'+_mapDrag.dy+'px)';
     document.getElementById('map-ov').style.transform='translate('+_mapDrag.dx+'px,'+_mapDrag.dy+'px)';
   });
-  var up=function(){
+  var up=function(e){
+    if(e&&e.pointerId!=null)delete ptrs[e.pointerId];
+    if(Object.keys(ptrs).length<2)pinch=null;
     if(!_mapDrag)return;
     var dx=_mapDrag.dx,dy=_mapDrag.dy;_mapDrag=null;
     box.style.cursor='grab';
@@ -1913,9 +2082,12 @@ function gridSnapshot(){
     days.forEach(function(day,i3){
       watches.forEach(function(w){
         if((w.locIds||[]).indexOf(state.activeLoc)<0)return;
-        var hit=scWatchMatch(w,watchBase(w),day);
+        var hit=scWatchMatch(w,watchBase(w),day,days[i3+1],i3===0?nowHourLoc():null);
         if(!hit)return;
-        g.strokeRect(LW+i3*cw+1,top+hit.run.from*rh+1,cw-4,(hit.run.to-hit.run.from)*rh-2);
+        var to1=Math.min(hit.run.to,24);
+        g.strokeRect(LW+i3*cw+1,top+hit.run.from*rh+1,cw-4,(to1-hit.run.from)*rh-2);
+        if(hit.run.to>24&&i3+1<days.length)   /* overnight spill → next column */
+          g.strokeRect(LW+(i3+1)*cw+1,top+1,cw-4,(hit.run.to-24)*rh-2);
       });
     });
     g.setLineDash([]);
@@ -2005,7 +2177,7 @@ function alertCheck(quiet){
   /* ⚠ committed-spray drift: the forecast under an upcoming plan changed and
      hours are now OUTSIDE its profile's limits. One chime per change of
      state — improving back to zero clears the memory quietly. */
-  var today=localISO();
+  var today=todayLoc();
   plans.forEach(function(pl){
     if(pl.done||pl.date<today)return;
     var dr=planDrift(pl);
@@ -2051,7 +2223,26 @@ function backImport(inp){
       (pack.locations||[]).forEach(function(l){if(!locs.find(function(x){return x.id===l.id;})){locs.push(l);nl++;}});
       (pack.profiles||[]).forEach(function(p){
         var mine=profs.findIndex(function(x){return x.id===p.id;});
-        if(mine>=0)profs[mine]=p;else profs.push(p);np++;});
+        if(mine<0){profs.push(p);np++;return;}
+        /* same id but DIFFERENT settings — every browser has p_default, so a
+           coworker's backup would silently replace the receiver's own tuned
+           limits (08-11 review). A pristine untouched default is replaced
+           quietly (fresh-machine restore); otherwise the user decides. */
+        var same=JSON.stringify(profs[mine])===JSON.stringify(p);
+        var pristine=JSON.stringify(profs[mine])===JSON.stringify(scDefaultProfile());
+        if(same){np++;return;}
+        if(pristine||confirm('The backup\'s condition profile "'+p.name+'" is DIFFERENT from the one already here.\n\nOK = replace mine with the backup\'s\nCancel = keep BOTH (the backup\'s comes in as a copy)')){
+          profs[mine]=p;np++;
+        } else {
+          var cp=JSON.parse(JSON.stringify(p));
+          cp.id='p_'+Date.now().toString(36)+'_imp';
+          cp.name=String(p.name).slice(0,52)+' (imported)';
+          profs.push(cp);np++;
+          /* re-point the pack's own records at the copy so its watches and
+             drift judgements still use the sender's limits */
+          (pack.watches||[]).forEach(function(w){if(w.profileId===p.id)w.profileId=cp.id;});
+          (pack.plans||[]).forEach(function(pl){if(pl.profId===p.id)pl.profId=cp.id;});
+        }});
       (pack.watches||[]).forEach(function(w){
         var mine=watches.findIndex(function(x){return x.id===w.id;});
         if(mine>=0)watches[mine]=w;else watches.push(w);nw++;});
@@ -2101,7 +2292,10 @@ function shareApply(){
   p.locs.forEach(function(pl,i){
     if(!pl||typeof pl.lat!=='number'||typeof pl.lon!=='number')return;
     if(pl.lat<-90||pl.lat>90||pl.lon<-180||pl.lon>180)return;
-    var dup=locs.some(function(l){return Math.abs(l.lat-pl.lat)<0.001&&Math.abs(l.lon-pl.lon)<0.001;});
+    /* same-town multi-site is a RECOMMENDED workflow (same geocoder coords,
+       different nicknames) — dedupe needs the NAME to match too (08-11) */
+    var dup=locs.some(function(l){return Math.abs(l.lat-pl.lat)<0.001&&Math.abs(l.lon-pl.lon)<0.001
+      &&String(l.name).toLowerCase()===String(pl.name||'').toLowerCase();});
     if(dup)return;
     locs.push({id:'l_'+Date.now().toString(36)+'_'+i,name:String(pl.name||'Shared spot').slice(0,80),lat:pl.lat,lon:pl.lon});
     added++;
