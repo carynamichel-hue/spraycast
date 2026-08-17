@@ -396,7 +396,7 @@ table.bigt col.cdl{width:64px;}
   </div>
 </div>
 
-<div class="ftr">SprayCast v0.16 · <a href="guide.html">📖 how-to guide</a>  · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+<div class="ftr">SprayCast v0.17 · <a href="guide.html">📖 how-to guide</a>  · forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
 built with the toolkit behind Overdevest Nurseries' farm-management apps</div>
 
 
@@ -733,15 +733,72 @@ function scPlanCovers(pl,date,hour,prevDate){
   if(prevDate&&pl.date===prevDate&&pl.to<=pl.from)return hour<pl.to; /* morning half */
   return false;
 }
-function scPlanEvent(pl){
+/* ── calendar times across timezones (2026-08-14) ────────────────────────
+   A spray window is a fixed MOMENT at the location, not a wall-clock time
+   the reader's own calendar may reinterpret. An ICS DATE-TIME carrying
+   neither a trailing Z nor a TZID is "floating" (RFC 5545 3.3.5): every
+   calendar shows it at that hour in ITS OWN zone. So a 6 AM New Jersey
+   spray opened by someone in California landed at 6 AM Pacific — three
+   hours wrong, silently. Harmless while everyone shared one timezone;
+   not harmless once the app is public.
+
+   Emitting a real UTC instant fixes it everywhere and needs no VTIMEZONE
+   block. The offset is resolved for the EVENT'S OWN date rather than the
+   moment the forecast was fetched: plans run up to two weeks out, and a
+   daylight-saving change inside that window would otherwise shift every
+   event by an hour. Pure + tested. */
+function scTzOffset(tz,utcMs){
+  /* minutes that `tz` is ahead of UTC at instant utcMs. Intl is the only
+     way to ask this without shipping a timezone database. */
+  try{
+    var p={},f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,
+      year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    f.formatToParts(new Date(utcMs)).forEach(function(x){p[x.type]=x.value;});
+    if(!p.year)return null;
+    /* hour12:false still yields "24" for midnight in some engines */
+    return (Date.UTC(+p.year,+p.month-1,+p.day,(+p.hour)%24,+p.minute,+p.second)-utcMs)/60000;
+  }catch(e){return null;}
+}
+function scZonedToUtc(dateStr,hour,tz,offSec){
+  /* wall time dateStr@hour AT the location → UTC ms, or null if the zone
+     is unknown. Two passes: the first offset comes from an approximate
+     instant, the second from the corrected one — that is what makes the
+     hours either side of a DST change come out right. */
+  var wall=Date.UTC(+dateStr.slice(0,4),+dateStr.slice(5,7)-1,+dateStr.slice(8,10),hour,0,0);
+  if(isNaN(wall))return null;
+  if(tz){
+    var o=scTzOffset(tz,wall);
+    if(o!=null){
+      var o2=scTzOffset(tz,wall-o*60000);
+      return wall-(o2==null?o:o2)*60000;
+    }
+  }
+  if(offSec!=null&&isFinite(offSec))return wall-offSec*1000;
+  return null;
+}
+function scUtcStamp(ms){
+  var d=new Date(ms),p=function(n){return ('0'+n).slice(-2);};
+  return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+'T'+
+         p(d.getUTCHours())+p(d.getUTCMinutes())+'00Z';
+}
+/* zone = {tz:'America/New_York', off:-14400} — either field alone is
+   enough; with neither we fall back to the old floating stamp, which is
+   still correct for a reader sitting in the location's own timezone. */
+function scPlanEvent(pl,zone){
+  zone=zone||{};
   var d=pl.date.replace(/-/g,'');
   var hh=function(h){return ('0'+h).slice(-2)+'0000';};
-  var endDate=d;
+  var endISO=pl.date,endDate=d;
   if(pl.to<=pl.from){ /* overnight spray runs into the next day */
     var dt=new Date(pl.date+'T12:00:00');dt.setDate(dt.getDate()+1);
-    endDate=dt.getFullYear()+('0'+(dt.getMonth()+1)).slice(-2)+('0'+dt.getDate()).slice(-2);
+    endISO=dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2);
+    endDate=endISO.replace(/-/g,'');
   }
-  return {uid:'sc_'+pl.id+'@spraycast',start:d+'T'+hh(pl.from),end:endDate+'T'+hh(pl.to),
+  var s=scZonedToUtc(pl.date,pl.from,zone.tz,zone.off);
+  var e=scZonedToUtc(endISO,pl.to,zone.tz,zone.off);
+  return {uid:'sc_'+pl.id+'@spraycast',
+    start:(s!=null?scUtcStamp(s):d+'T'+hh(pl.from)),
+    end:(e!=null?scUtcStamp(e):endDate+'T'+hh(pl.to)),
     summary:'Spray: '+pl.name,desc:(pl.notes?pl.notes+'\n':'')+'Planned with SprayCast'};
 }
 /* ── committed-spray drift: is a plan's window still inside its profile's
@@ -1259,11 +1316,27 @@ function planDrift(pl){
   return scPlanDrift(pl,planProfile(pl),days);
 }
 function icsStamp(){return new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');}
+/* The zone a plan's hours are written in — the LOCATION's, never the
+   reader's. Locations added by search carry an IANA tz from the geocoder;
+   ones that arrived through a share link have none until their forecast
+   lands (wxFetch backfills it), so the active location's utc_offset_seconds
+   is kept as a second source. See scPlanEvent. */
+function planZone(pl){
+  var l=locs.find(function(x){return x.id===pl.locId;});
+  var tz=(l&&l.tz&&l.tz!=='auto')?l.tz:null;
+  var off=null;
+  if(pl.locId===state.activeLoc&&wxCache){
+    if(!tz&&wxCache.timezone&&wxCache.timezone!=='auto')tz=wxCache.timezone;
+    if(wxCache.utc_offset_seconds!=null)off=wxCache.utc_offset_seconds;
+  }
+  return {tz:tz,off:off};
+}
+function planEvent(pl){return scPlanEvent(pl,planZone(pl));}
 function icsDownload(evts,fname){
   var b=new Blob([scIcs(evts,icsStamp())],{type:'text/calendar'});
   var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fname;a.click();
 }
-function icsOne(id){var p=plans.find(function(x){return x.id===id;});if(p)icsDownload([scPlanEvent(p)],'Spray_'+p.date+'.ics');}
+function icsOne(id){var p=plans.find(function(x){return x.id===id;});if(p)icsDownload([planEvent(p)],'Spray_'+p.date+'.ics');}
 /* ── file hand-off: on a PHONE the native share sheet is the honest flow
    (preview + Save Image / Save to Files / Messages / Mail) — a hidden
    download link on iOS lands in odd "open in …?" app pickers or Notes.
@@ -1458,7 +1531,7 @@ function icsAllPage(){
   var f=_sprayFilterLoc();
   var up=plans.filter(function(p){return !p.done&&p.date>=todayLoc()&&(!f||p.locId===f);});
   if(!up.length){toast('No upcoming planned sprays to export');return;}
-  icsDownload(up.map(scPlanEvent),'SprayCast_plan.ics');
+  icsDownload(up.map(planEvent),'SprayCast_plan.ics');
   toast('Calendar file downloaded ('+up.length+' spray'+(up.length===1?'':'s')+') — open it and save the events');
 }
 function renderWW(){
@@ -1785,6 +1858,16 @@ function renderAll(){
     if(!activeLoc()||activeLoc().id!==reqId)return;
     wxCache=d;
     if(!d){document.getElementById('wx-note').textContent='⚠ forecast unavailable — check the internet connection';_pendingCommit=null;return;}
+    /* Learn this location's IANA timezone from the forecast reply if we
+       don't already have it — a location that arrived through a share link
+       carries no tz, and calendar exports need one to write a real instant
+       rather than a floating time (see planZone/scPlanEvent). */
+    try{
+      var _l=activeLoc();
+      if(_l&&(!_l.tz||_l.tz==='auto')&&d.timezone&&d.timezone!=='auto'){
+        _l.tz=d.timezone;scSave(SC_KEYS.locs,locs);
+      }
+    }catch(e){}
     /* a stale offline cache must SAY it's old — the time alone hides it */
     var atD=new Date(at),atOld=atD.toDateString()!==new Date().toDateString();
     document.getElementById('wx-note').textContent=atOld
