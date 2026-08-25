@@ -3,6 +3,7 @@
   "short_name": "SprayCast",
   "description": "Plan spray windows around the forecast: wind, gusts, rain, temperature and drift direction — free, no accounts, your data stays on your device.",
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#f2f6f9",
   "theme_color": "#0e5a8a",
