@@ -1,6 +1,6 @@
 # SprayCast
 
-Spray window planner — which hours are actually worth spraying, judged on the
+Spray window planner — helps you plan spraying around the weather, judged on the
 forecast at your farm against your own limits for wind, gusts, rain chance and
 temperature, with the drift direction for every hour.
 
