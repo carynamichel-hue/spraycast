@@ -16,7 +16,7 @@
    are immutable); only the shell must always match the server.
    CACHE is stamped per-deploy by scripts/deploy_pages.mjs so old caches
    sweep; the source keeps the -v1 placeholder. */
-var CACHE = 'spraycast-nuxt-20260827114447';
+var CACHE = 'spraycast-nuxt-20260827115046';
 var SHELL = ['./', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', function (e) {
